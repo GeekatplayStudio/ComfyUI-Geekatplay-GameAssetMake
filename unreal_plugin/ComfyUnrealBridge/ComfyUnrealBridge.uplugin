@@ -1,0 +1,28 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.1.0",
+	"FriendlyName": "Geekatplay GameAssetMake Unreal Bridge",
+	"Description": "Automated bridge connecting ComfyUI 3D asset generation workflows (Geekatplay GameAssetMake) to Unreal Engine. Auto-imports FBX/GLB models, creates PBR materials, sets up collisions, and places assets directly into Unreal level coordinates.",
+	"Category": "Editor Tools",
+	"CreatedBy": "Geekatplay Studio — Vladimir Chopine",
+	"CreatedByURL": "https://www.geekatplay.com",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "https://www.geekatplay.com",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"EnabledByDefault": true,
+	"Plugins": [
+		{
+			"Name": "PythonScriptPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "EditorScriptingUtilities",
+			"Enabled": true
+		}
+	]
+}

@@ -1,0 +1,86 @@
+# =============================================================
+# Geekatplay GameAssetMake — Unreal Engine Bridge HTTP listener
+# (c) Geekatplay Studio / Vladimir Chopine
+# =============================================================
+import json
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+try:
+    import unreal
+except ImportError:
+    unreal = None
+
+# UE Content/Python is on sys.path, these modules run as top-level scripts (no package)
+import comfy_importer
+
+SERVER_PORT = 30010
+_server_instance = None
+_pending_payloads = []
+
+
+class ComfyUnrealRequestHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers.get("Content-Length", 0))
+        post_data = self.rfile.read(content_length)
+
+        try:
+            payload = json.loads(post_data.decode("utf-8"))
+            _pending_payloads.append(payload)
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            response = json.dumps({"status": "received", "items": len(payload.get("assets", []))})
+            self.wfile.write(response.encode("utf-8"))
+        except Exception as e:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps({
+            "status": "Geekatplay GameAssetMake Unreal Bridge Active",
+            "port": SERVER_PORT
+        }).encode("utf-8"))
+
+    def log_message(self, format, *args):
+        # Silence default HTTP server console noise
+        pass
+
+
+def process_pending_imports_on_tick(delta_seconds):
+    """
+    Main-thread tick handler registered with the Slate post-tick callback in Unreal.
+    Asset import must happen on the game thread, never on the HTTP thread.
+    """
+    while _pending_payloads:
+        payload = _pending_payloads.pop(0)
+        try:
+            comfy_importer.import_and_place_manifest_payload(payload)
+        except Exception as e:
+            if unreal:
+                unreal.log_error(f"[GameAssetMake Bridge Import Error]: {e}")
+
+
+def start_bridge_server():
+    global _server_instance
+    if _server_instance is not None:
+        return
+
+    def run_server():
+        HTTPServer.allow_reuse_address = True
+        httpd = HTTPServer(("127.0.0.1", SERVER_PORT), ComfyUnrealRequestHandler)
+        httpd.serve_forever()
+
+    t = threading.Thread(target=run_server, daemon=True)
+    t.start()
+    _server_instance = t
+
+    if unreal:
+        unreal.register_slate_post_tick_callback(process_pending_imports_on_tick)
+        unreal.log(f"[GameAssetMake Bridge] Listener server active on port {SERVER_PORT}")
