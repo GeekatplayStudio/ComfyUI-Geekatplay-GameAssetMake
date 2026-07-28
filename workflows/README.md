@@ -26,6 +26,16 @@ Type *"medieval village in a green valley"* into the **Scene Director** node and
 
 The gallery is the human-in-the-loop stop: nothing is spent on 3D generation until you approve. Re-queue with a different seed to redo any branch.
 
+### 📐 Placement Manager — sizes and positions that actually match
+
+Every delivery now flows through the **Placement Manager** node, the single authority for what enters the engine:
+
+- **Order** — terrain imports first, then the skydome, then assets, in one payload through one bridge node.
+- **True scale** — AI-generated meshes arrive in random units. Each asset carries `target_size_m` (its intended real-world size); the engine importer *measures the imported mesh's bounds* and scales it to match exactly, then verifies the terrain's world size the same way. No more 100× surprises.
+- **Terrain snapping** — asset Z is sampled from the terrain's 16-bit heightfield, so buildings sit ON hills instead of floating or sinking; the mesh *bottom* is grounded, not its pivot.
+- **Overlap resolution** — assets planned too close are nudged apart automatically.
+- One failed asset no longer aborts the batch — the Unreal importer isolates errors per asset and reports which ones failed at the end.
+
 ### 🗺️ Layout map & 🌦️ season/time intelligence
 
 - The **Layout Map** node renders the director's plan as a visible top-down map: meter grid, one marker per asset with name + (x, y) coordinates, facing arrows, and a sun compass — verify the placement *before* generating anything.

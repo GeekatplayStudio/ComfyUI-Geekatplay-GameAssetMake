@@ -26,6 +26,9 @@ namespace GeekatplayGameForge
         public float[] scale_override;
         public float[] world_placement_offset;
         public float world_rotation_yaw;
+        public float[] target_size_m;
+        public bool normalize_to_target;
+        public float ground_z_cm;
     }
 
     [Serializable]
@@ -191,6 +194,34 @@ namespace GeekatplayGameForge
                     if (Mathf.Abs(meta.world_rotation_yaw) > 0.01f)
                     {
                         instance.transform.rotation = Quaternion.Euler(0f, meta.world_rotation_yaw, 0f);
+                    }
+
+                    // Placement Manager normalization: measure the mesh and scale it
+                    // to its intended real-world size (AI meshes arrive in random units),
+                    // then sit its bottom on the terrain ground height.
+                    if (meta.normalize_to_target && meta.target_size_m != null && meta.target_size_m.Length >= 3)
+                    {
+                        var renderers = instance.GetComponentsInChildren<Renderer>();
+                        if (renderers.Length > 0)
+                        {
+                            Bounds bounds = renderers[0].bounds;
+                            for (int rb = 1; rb < renderers.Length; rb++) bounds.Encapsulate(renderers[rb].bounds);
+                            float actualMax = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+                            float targetMax = Mathf.Max(meta.target_size_m[0], meta.target_size_m[1], meta.target_size_m[2]);
+                            if (actualMax > 0.001f)
+                            {
+                                float s = targetMax / actualMax;
+                                instance.transform.localScale = instance.transform.localScale * s;
+                                // re-measure and ground the mesh bottom
+                                bounds = renderers[0].bounds;
+                                for (int rb = 1; rb < renderers.Length; rb++) bounds.Encapsulate(renderers[rb].bounds);
+                                float groundY = meta.ground_z_cm / 100f;
+                                float shift = groundY - bounds.min.y;
+                                instance.transform.position += new Vector3(0f, shift, 0f);
+                                Debug.Log($"[Geekatplay GameAssetMake] Normalized '{meta.name}': " +
+                                          $"{actualMax:F2}m -> {targetMax:F2}m (scale {s:F3}), grounded at {groundY:F2}m");
+                            }
+                        }
                     }
                     Undo.RegisterCreatedObjectUndo(instance, "GameForge Import");
                 }

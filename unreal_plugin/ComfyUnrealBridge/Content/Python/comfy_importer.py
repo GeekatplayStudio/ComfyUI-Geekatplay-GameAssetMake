@@ -13,21 +13,84 @@ except ImportError:
 
 def _find_static_mesh(folder, name_hint):
     """
-    Locates the StaticMesh produced by an import. FBX imports name the asset
+    Locates the mesh produced by an import. FBX imports name the asset
     directly; glb imports go through Interchange, which may nest or rename,
-    so fall back to scanning the folder for a StaticMesh matching the hint.
+    so fall back to scanning the folder — preferring an EXACT name match so
+    'House_1' never resolves to 'House_10'.
     """
     direct = f"{folder.rstrip('/')}/{name_hint}.{name_hint}"
     if unreal.EditorAssetLibrary.does_asset_exist(direct):
         return unreal.EditorAssetLibrary.load_asset(direct)
 
+    exact, partial = None, None
+    hint = name_hint.lower()
     for asset_path in unreal.EditorAssetLibrary.list_assets(folder, recursive=True):
-        if name_hint.lower() not in asset_path.lower():
+        base = asset_path.split("/")[-1].split(".")[0].lower()
+        if base != hint and hint not in base:
             continue
         loaded = unreal.EditorAssetLibrary.load_asset(asset_path)
         if isinstance(loaded, (unreal.StaticMesh, unreal.SkeletalMesh)):
-            return loaded
-    return None
+            if base == hint:
+                exact = loaded
+                break
+            partial = partial or loaded
+    return exact or partial
+
+
+def _actor_bounds(actor):
+    """(origin, box_extent) world-space; extent is HALF-size in cm."""
+    origin, extent = actor.get_actor_bounds(False)
+    return origin, extent
+
+
+def _normalize_and_ground(actor, asset):
+    """
+    Measures the spawned mesh and makes it the size the plan intended:
+    uniform scale so the largest dimension matches target_size_m, then
+    lifts/lowers so the mesh bottom sits exactly on ground_z_cm.
+    AI-generated meshes arrive in random units — this makes them uniform.
+    """
+    target = asset.get("target_size_m")
+    if asset.get("normalize_to_target") and target:
+        _, extent = _actor_bounds(actor)
+        actual_max_cm = 2.0 * max(extent.x, extent.y, extent.z)
+        target_max_cm = max(float(t) for t in target) * 100.0
+        if actual_max_cm > 1.0:
+            s = target_max_cm / actual_max_cm
+            actor.set_actor_scale_3d(unreal.Vector(s, s, s))
+            unreal.log(f"[GameAssetMake] Normalized '{asset.get('name')}': mesh was "
+                       f"{actual_max_cm / 100.0:.2f}m, target {target_max_cm / 100.0:.2f}m "
+                       f"-> scale {s:.4f}")
+
+    ground_z = asset.get("ground_z_cm")
+    if ground_z is not None:
+        origin, extent = _actor_bounds(actor)  # re-measure after scaling
+        bottom = origin.z - extent.z
+        shift = float(ground_z) - bottom
+        loc = actor.get_actor_location()
+        actor.set_actor_location(unreal.Vector(loc.x, loc.y, loc.z + shift), False, False)
+
+
+def _verify_terrain_size(actor, asset):
+    """glTF unit handling differs between importers — measure the placed
+    terrain and rescale if it's off from its declared world size."""
+    size_m = asset.get("terrain_world_size_m")
+    if not asset.get("verify_world_size") or not size_m:
+        return
+    _, extent = _actor_bounds(actor)
+    actual_m = 2.0 * max(extent.x, extent.y) / 100.0
+    if actual_m < 0.01:
+        return
+    ratio = float(size_m) / actual_m
+    if not (0.9 <= ratio <= 1.1):
+        s = actor.get_actor_scale_3d()
+        actor.set_actor_scale_3d(unreal.Vector(s.x * ratio, s.y * ratio, s.z * ratio))
+        unreal.log(f"[GameAssetMake] Terrain measured {actual_m:.0f}m, expected {size_m:.0f}m "
+                   f"-> corrected scale x{ratio:.3f}")
+    # bottom of the terrain sits at z=0
+    origin, extent = _actor_bounds(actor)
+    loc = actor.get_actor_location()
+    actor.set_actor_location(unreal.Vector(loc.x, loc.y, loc.z - (origin.z - extent.z)), False, False)
 
 
 def _import_file(asset_tools, source_path, dest_folder, dest_name, options=None):
@@ -181,75 +244,91 @@ def import_and_place_manifest_payload(payload_dict):
     if environment and auto_place:
         _setup_sun(editor_actor_subsystem, environment)
 
+    failed = []
     for asset in assets:
-        source_path = asset.get("source_file")
-        if not source_path or not os.path.exists(source_path):
-            unreal.log_warning(f"[GameAssetMake Skip] Source file missing: {source_path}")
-            continue
+        # One bad asset must NEVER abort the rest of the batch
+        try:
+            imported_count += _process_one_asset(
+                asset, asset_tools, editor_actor_subsystem,
+                target_folder, env_folder, auto_place, auto_collision)
+        except Exception as exc:
+            failed.append(asset.get("name", "?"))
+            unreal.log_error(f"[GameAssetMake] Asset '{asset.get('name')}' failed: {exc} "
+                             f"— continuing with the next asset.")
 
-        asset_name = asset.get("name", "GeneratedAsset").replace(" ", "_")
-        rig_type = asset.get("rig_type", "none")
-        category = asset.get("category", "")
-        ext = source_path.rsplit(".", 1)[-1].lower()
-        is_image = ext in ("png", "jpg", "jpeg", "exr", "hdr", "tga")
-        is_gltf = ext in ("glb", "gltf")
-
-        # ---- image-based environment assets --------------------------------
-        if is_image:
-            _import_file(asset_tools, source_path, env_folder, asset_name)
-            unreal.log(f"[GameAssetMake] Imported {category or 'texture'} '{asset_name}' -> {env_folder}")
-            imported_count += 1
-
-            if category == "skydome" and auto_place:
-                tex = _find_static_mesh(env_folder, asset_name) or \
-                    unreal.EditorAssetLibrary.load_asset(f"{env_folder}/{asset_name}.{asset_name}")
-                if isinstance(tex, unreal.Texture):
-                    _setup_skydome(editor_actor_subsystem, tex, env_folder, asset_name)
-            elif category == "terrain":
-                unreal.log(f"[GameAssetMake] Heightmap imported. For a native Landscape use "
-                           f"Mode > Landscape > Import from File with: {source_path}")
-            continue
-
-        # ---- mesh assets ---------------------------------------------------
-        if is_gltf:
-            # glTF goes through Interchange — passing FbxImportUI would break it
-            dest = env_folder if category in ("terrain_mesh",) else target_folder
-            _import_file(asset_tools, source_path, dest, asset_name)
-        else:
-            options = unreal.FbxImportUI()
-            options.import_mesh = True
-            options.import_textures = True
-            options.import_materials = True
-            if rig_type != "none":
-                options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
-                options.skeletal_mesh_import_data.set_editor_property("import_uniform_scale", scale_factor)
-            else:
-                options.mesh_type_to_import = unreal.FBXImportType.FBXIT_STATIC_MESH
-                options.static_mesh_import_data.set_editor_property("import_uniform_scale", scale_factor)
-                if auto_collision:
-                    options.static_mesh_import_data.set_editor_property("auto_generate_collision", True)
-            dest = target_folder
-            _import_file(asset_tools, source_path, dest, asset_name, options)
-
-        unreal.log(f"[GameAssetMake] Imported mesh '{asset_name}' -> {dest}")
-        imported_count += 1
-
-        if auto_place:
-            mesh = _find_static_mesh(dest, asset_name)
-            if mesh is None:
-                unreal.log_warning(f"[GameAssetMake] Imported '{asset_name}' but found no "
-                                   f"mesh asset to place (check {dest}).")
-                continue
-            if category == "terrain_mesh":
-                # Terrain glb is authored in meters at world size; Interchange
-                # imports meters->cm (x100) already, so place at origin, scale 1.
-                terrain_asset = dict(asset)
-                terrain_asset["location"] = [0.0, 0.0, 0.0]
-                terrain_asset["scale"] = [1.0, 1.0, 1.0]
-                terrain_asset["rotation_yaw"] = 0.0
-                _spawn_placed(editor_actor_subsystem, mesh, terrain_asset, scale_factor)
-            else:
-                _spawn_placed(editor_actor_subsystem, mesh, asset, scale_factor)
-
-    unreal.log(f"[GameAssetMake] Batch complete: {imported_count}/{len(assets)} imported.")
+    unreal.log(f"[GameAssetMake] Batch complete: {imported_count}/{len(assets)} imported"
+               + (f", failed: {failed}" if failed else "."))
     return True
+
+
+def _process_one_asset(asset, asset_tools, editor_actor_subsystem,
+                       target_folder, env_folder, auto_place, auto_collision):
+    """Imports + places a single asset. Returns 1 on success, 0 on skip."""
+    source_path = asset.get("source_file")
+    if not source_path or not os.path.exists(source_path):
+        unreal.log_warning(f"[GameAssetMake Skip] Source file missing: {source_path}")
+        return 0
+
+    asset_name = asset.get("name", "GeneratedAsset").replace(" ", "_")
+    rig_type = asset.get("rig_type", "none")
+    category = asset.get("category", "")
+    ext = source_path.rsplit(".", 1)[-1].lower()
+    is_image = ext in ("png", "jpg", "jpeg", "exr", "hdr", "tga")
+    is_gltf = ext in ("glb", "gltf")
+
+    # ---- image-based environment assets --------------------------------
+    if is_image:
+        _import_file(asset_tools, source_path, env_folder, asset_name)
+        unreal.log(f"[GameAssetMake] Imported {category or 'texture'} '{asset_name}' -> {env_folder}")
+        if category == "skydome" and auto_place:
+            tex = unreal.EditorAssetLibrary.load_asset(f"{env_folder}/{asset_name}.{asset_name}")
+            if isinstance(tex, unreal.Texture):
+                _setup_skydome(editor_actor_subsystem, tex, env_folder, asset_name)
+        elif category == "terrain":
+            unreal.log(f"[GameAssetMake] Heightmap imported. For a native Landscape use "
+                       f"Mode > Landscape > Import from File with: {source_path}")
+        return 1
+
+    # ---- mesh assets ----------------------------------------------------
+    if is_gltf:
+        # glTF goes through Interchange — passing FbxImportUI would break it
+        dest = env_folder if category in ("terrain_mesh",) else target_folder
+        _import_file(asset_tools, source_path, dest, asset_name)
+    else:
+        options = unreal.FbxImportUI()
+        options.import_mesh = True
+        options.import_textures = True
+        options.import_materials = True
+        # NOTE: no blanket import_uniform_scale — AI meshes arrive in random
+        # units; size is normalized after spawn against target_size_m instead.
+        if rig_type != "none":
+            options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
+        else:
+            options.mesh_type_to_import = unreal.FBXImportType.FBXIT_STATIC_MESH
+            if auto_collision:
+                options.static_mesh_import_data.set_editor_property("auto_generate_collision", True)
+        dest = target_folder
+        _import_file(asset_tools, source_path, dest, asset_name, options)
+
+    unreal.log(f"[GameAssetMake] Imported mesh '{asset_name}' -> {dest}")
+
+    if auto_place:
+        mesh = _find_static_mesh(dest, asset_name)
+        if mesh is None:
+            unreal.log_warning(f"[GameAssetMake] Imported '{asset_name}' but found no "
+                               f"mesh asset to place (check {dest}).")
+            return 1
+
+        if category == "terrain_mesh":
+            terrain_asset = dict(asset)
+            terrain_asset["location"] = [0.0, 0.0, 0.0]
+            terrain_asset["scale"] = [1.0, 1.0, 1.0]
+            terrain_asset["rotation_yaw"] = 0.0
+            actor = _spawn_placed(editor_actor_subsystem, mesh, terrain_asset, 100.0)
+            if actor:
+                _verify_terrain_size(actor, asset)
+        else:
+            actor = _spawn_placed(editor_actor_subsystem, mesh, asset, 100.0)
+            if actor:
+                _normalize_and_ground(actor, asset)
+    return 1

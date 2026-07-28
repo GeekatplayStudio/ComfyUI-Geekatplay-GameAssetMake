@@ -29,6 +29,7 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
 - 🧊 **Multiple 3D Backends, cloud or local** — cloud: **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **HiTem3D**, chosen globally on the 3D Generator. Local: **Hunyuan3D 2.1** runs entirely on your own GPU — no API, no keys, no credits, nothing uploaded. Both paths feed the same engine bridges and show a results panel listing every generated model.
 - 🎨 **30+ Art Styles** — from Low Poly, Voxel, and PS1 Retro through Realistic PBR, Dark Fantasy, Cyberpunk, Toon/Cel Shaded, Chibi, Claymation, and more. Concepts are generated one object per image, 3/4 view to the camera, isolated on white — the framing image-to-3D APIs handle best.
+- 📐 **Placement Manager** — the single authority for engine delivery: imports in the right order (terrain → sky → assets), normalizes every AI mesh to its intended real-world size by measuring its actual bounds in the engine, snaps asset Z onto the terrain heightfield, and nudges overlapping assets apart. One failing asset no longer aborts the batch.
 - 🔌 **Engine Connection Check** — a dedicated node (plus automatic pre-send verification in both bridges) confirms your Unreal/Unity editor bridge is installed, running, and reachable before you spend API credits.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
 - 📦 **Unity Editor Bridge** — a single-file Unity Editor script listening on port `8080` that imports models into `Assets/AI_Generated/` and instantiates them into the open scene, with automatic Unreal→Unity unit/axis conversion.
@@ -81,6 +82,7 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── local_hunyuan3d_node.py       # 🖥️ Local 3D Generator (Hunyuan3D 2.1)
 │   ├── scene_director_node.py        # 🎬 Scene Director (prompt → scene plan + sun/season)
 │   ├── layout_map_node.py            # 🗺️ Layout Map (top-down placement preview)
+│   ├── placement_manager_node.py     # 📐 Placement Manager (order, true scale, terrain snap)
 │   ├── terrain_mesh_node.py          # ⛰️ Terrain Mesh Builder (heightmap → mesh)
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge

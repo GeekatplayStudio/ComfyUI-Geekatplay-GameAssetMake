@@ -84,7 +84,13 @@ class UnrealEngineBridgeNode:
                 "scale": item.get("scale_override", [1.0, 1.0, 1.0]),
                 "collision": item.get("collision_type", "box"),
                 "location": item.get("world_placement_offset", [0.0, 0.0, 0.0]),
-                "rotation_yaw": item.get("world_rotation_yaw", 0.0)
+                "rotation_yaw": item.get("world_rotation_yaw", 0.0),
+                # Placement Manager fields: intended real-world size + normalization
+                "target_size_m": item.get("target_size_m"),
+                "normalize_to_target": item.get("normalize_to_target", False),
+                "ground_z_cm": item.get("ground_z_cm"),
+                "verify_world_size": item.get("verify_world_size", False),
+                "terrain_world_size_m": item.get("terrain_world_size_m"),
             }
             import_payload["assets"].append(asset_entry)
 

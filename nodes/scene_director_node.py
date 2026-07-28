@@ -367,7 +367,11 @@ class SceneDirectorNode:
                 "rig_type": a["rig_type"],
                 "include_texture": True,
                 "include_rigging": a["rig_type"] != "none",
-                "scale_override": sc,
+                # intended real-world size in meters — the Placement Manager and
+                # Unreal importer normalize the imported mesh to this; the actor
+                # scale multiplier stays neutral
+                "target_size_m": sc,
+                "scale_override": [1.0, 1.0, 1.0],
                 "collision_type": a["collision_type"],
                 # meters -> engine cm; z lifts the pivot to half object height
                 "world_placement_offset": [x_m * M_TO_CM, y_m * M_TO_CM, sc[2] * M_TO_CM / 2.0],

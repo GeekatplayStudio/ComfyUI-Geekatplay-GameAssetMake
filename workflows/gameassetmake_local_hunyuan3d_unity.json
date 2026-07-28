@@ -1,6 +1,6 @@
 {
-  "last_node_id": 21,
-  "last_link_id": 12,
+  "last_node_id": 55,
+  "last_link_id": 13,
   "nodes": [
     {
       "id": 1,
@@ -451,10 +451,78 @@
       "title": "Local Hunyuan3D - model setup"
     },
     {
+      "id": 55,
+      "type": "AssetPlacementManagerNode",
+      "pos": [
+        1980,
+        40
+      ],
+      "size": [
+        420,
+        260
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "assets_manifest_json",
+          "type": "STRING",
+          "link": 12
+        },
+        {
+          "name": "terrain_manifest_json",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "skydome_manifest_json",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "extra_manifest_json",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "links": [
+            13
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "placement_report",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "asset_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AssetPlacementManagerNode"
+      },
+      "widgets_values": [
+        true,
+        true,
+        true
+      ],
+      "title": "PLACEMENT MANAGER - true scale + positions"
+    },
+    {
       "id": 10,
       "type": "UnityEngineBridgeNode",
       "pos": [
-        1980,
+        2460,
         200
       ],
       "size": [
@@ -468,7 +536,7 @@
         {
           "name": "completed_3d_manifest_json",
           "type": "STRING",
-          "link": 12
+          "link": 13
         }
       ],
       "outputs": [
@@ -505,7 +573,7 @@
       "id": 11,
       "type": "EngineConnectionCheckNode",
       "pos": [
-        1980,
+        2460,
         620
       ],
       "size": [
@@ -633,6 +701,14 @@
     [
       12,
       9,
+      0,
+      55,
+      0,
+      "STRING"
+    ],
+    [
+      13,
+      55,
       0,
       10,
       0,
