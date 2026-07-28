@@ -26,6 +26,12 @@ Type *"medieval village in a green valley"* into the **Scene Director** node and
 
 The gallery is the human-in-the-loop stop: nothing is spent on 3D generation until you approve. Re-queue with a different seed to redo any branch.
 
+### 🗺️ Layout map & 🌦️ season/time intelligence
+
+- The **Layout Map** node renders the director's plan as a visible top-down map: meter grid, one marker per asset with name + (x, y) coordinates, facing arrows, and a sun compass — verify the placement *before* generating anything.
+- The prompt drives the **environment**: say *"medieval village at sunset in winter"* and the director detects season + time of day, then: the terrain's ground texture prompt becomes seasonal (snow on peaks, frozen paths — baked onto the terrain mesh), the skydome prompt becomes a winter sunset sky, and the **sun position is computed for that season and hour** (winter sunset ≈ azimuth 265°, elevation 2°, warm orange). The Unreal bridge carries this as `environment_json`, and the plugin **sets a DirectionalLight in the level** to match — imported terrain, sky, and lighting all agree.
+- Ground-texture-to-terrain pairing follows the two-step approach from the author's [ai-terrain](https://github.com/GeekatplayStudio/ai-terrain) project: texture generated to match the terrain description and elevation zones, then baked into the terrain `.glb` with matching UVs.
+
 The 3D provider (**Tripo3D / Meshy / HiTem3D**) is one global `engine` choice on the 3D Generator node — no more per-provider workflow duplicates. Unity delivery for terrain/skydome/textures: swap the bridge node for the Unity one.
 
 ## 🖥️ Local vs cloud 3D generation

@@ -25,6 +25,87 @@ except ImportError:
 
 M_TO_CM = 100.0
 
+# ---------------------------------------------------------------
+# Environment intelligence (ported from Geekatplay ai-terrain):
+# season + time-of-day parsed from the prompt drive the sun position,
+# light color/intensity, seasonal terrain texture, and the sky brief.
+# ---------------------------------------------------------------
+SEASONS = {
+    "winter": {"kw": ("winter", "snow", "frozen", "icy"), "max_elev": 22.0,
+               "sunrise": 8.0, "sunset": 16.0,
+               "terrain": "snow-covered ground, snow on peaks and ridges, exposed dark rock on steep slopes, frozen dirt paths",
+               "sky": "cold pale winter sky"},
+    "summer": {"kw": ("summer", "hot", "midsummer"), "max_elev": 65.0,
+               "sunrise": 5.0, "sunset": 21.0,
+               "terrain": "lush green grass, dry dirt paths, patches of wildflowers, sun-baked rock",
+               "sky": "deep blue summer sky"},
+    "autumn": {"kw": ("autumn", "fall", "harvest"), "max_elev": 40.0,
+               "sunrise": 6.5, "sunset": 18.5,
+               "terrain": "brown and orange fallen leaves, faded grass, muddy paths, moss on rock",
+               "sky": "crisp autumn sky"},
+    "spring": {"kw": ("spring", "bloom", "blossom"), "max_elev": 50.0,
+               "sunrise": 6.0, "sunset": 19.0,
+               "terrain": "fresh green grass, blossoming meadow patches, damp earth paths",
+               "sky": "soft spring sky"},
+}
+
+TIMES_OF_DAY = {
+    "sunrise":  {"kw": ("sunrise", "dawn", "daybreak"), "frac": 0.03},
+    "morning":  {"kw": ("morning",), "frac": 0.25},
+    "noon":     {"kw": ("noon", "midday"), "frac": 0.5},
+    "afternoon": {"kw": ("afternoon",), "frac": 0.68},
+    "golden hour": {"kw": ("golden hour",), "frac": 0.9},
+    "sunset":   {"kw": ("sunset", "dusk", "evening", "twilight"), "frac": 0.97},
+    "night":    {"kw": ("night", "midnight", "moonlit", "moonlight"), "frac": -1.0},
+}
+
+
+def parse_environment(scene_prompt):
+    """Detects season and time-of-day keywords; defaults: summer / afternoon."""
+    p = scene_prompt.lower()
+    season = next((name for name, s in SEASONS.items() if any(k in p for k in s["kw"])), "summer")
+    tod = next((name for name, t in TIMES_OF_DAY.items() if any(k in p for k in t["kw"])), "afternoon")
+    return season, tod
+
+
+def compute_sun(season, time_of_day):
+    """
+    Plausible northern-hemisphere sun position for the season/time.
+    Returns dict: azimuth_deg (0=N, clockwise), elevation_deg, intensity, color_hex.
+    """
+    s = SEASONS[season]
+    frac = TIMES_OF_DAY[time_of_day]["frac"]
+
+    if frac < 0:  # night: dim blue moonlight
+        return {"azimuth_deg": 200.0, "elevation_deg": 35.0,
+                "intensity": 0.5, "color_hex": "#8FA3FF",
+                "season": season, "time_of_day": time_of_day}
+
+    elevation = max(2.0, s["max_elev"] * math.sin(frac * math.pi))
+    azimuth = 90.0 + 180.0 * frac  # east -> south -> west
+
+    if elevation < 10.0:
+        color, intensity = "#FF8C42", 3.0     # low warm sun (sunrise/sunset)
+    elif elevation < 25.0:
+        color, intensity = "#FFD9A0", 6.0
+    else:
+        color, intensity = "#FFF4E0", 10.0
+
+    return {"azimuth_deg": round(azimuth, 1), "elevation_deg": round(elevation, 1),
+            "intensity": intensity, "color_hex": color,
+            "season": season, "time_of_day": time_of_day}
+
+
+def build_terrain_texture_prompt(season, base_terrain_desc, art_style):
+    """
+    Top-down satellite ground texture matched to the terrain and season —
+    the two-step heightmap->matching-texture idea from ai-terrain.
+    """
+    seasonal = SEASONS[season]["terrain"]
+    return (f"strictly top-down orthographic satellite texture map of terrain, {seasonal}, "
+            f"terrain features: {base_terrain_desc}, {art_style} style, seamless, "
+            f"no lighting, no shadows, no perspective, no horizon, 1:1 aspect")
+
 CATEGORY_DEFAULTS = {
     "hero":        {"rig": "biped", "collision": "capsule", "scale": [1.0, 1.0, 1.8]},
     "npc":         {"rig": "biped", "collision": "capsule", "scale": [1.0, 1.0, 1.8]},
@@ -247,9 +328,9 @@ class SceneDirectorNode:
             },
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "INT")
-    RETURN_NAMES = ("llm_breakdown_json", "terrain_description", "skydome_prompt",
-                    "scene_layout_json", "asset_count")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "INT")
+    RETURN_NAMES = ("llm_breakdown_json", "terrain_description", "terrain_texture_prompt",
+                    "skydome_prompt", "scene_layout_json", "environment_json", "asset_count")
     FUNCTION = "direct_scene"
     CATEGORY = "Geekatplay GameAssetMake/Planner"
 
@@ -293,21 +374,42 @@ class SceneDirectorNode:
                 "world_rotation_yaw": a["yaw_deg"],
             })
 
+        # --- environment: season + time-of-day drive sun / textures / sky ---
+        season, time_of_day = parse_environment(scene_prompt)
+        sun = compute_sun(season, time_of_day)
+        terrain_texture_prompt = build_terrain_texture_prompt(
+            season, layout["terrain_description"], art_style)
+        sky_prompt = (f"equirectangular 360 degree panorama, {SEASONS[season]['sky']} at "
+                      f"{time_of_day}, {layout['skydome_prompt']}, "
+                      f"sun at {sun['elevation_deg']:.0f} degrees elevation, "
+                      f"seamless horizontal wrap, no ground objects")
+
+        environment = {
+            "season": season,
+            "time_of_day": time_of_day,
+            "sun": sun,
+        }
+
         layout_full = {
             "scene_prompt": scene_prompt,
             "scene_size_m": scene_size_m,
             "art_style": art_style,
             "layout_source": layout["layout_source"],
             "terrain_description": layout["terrain_description"],
-            "skydome_prompt": layout["skydome_prompt"],
+            "terrain_texture_prompt": terrain_texture_prompt,
+            "skydome_prompt": sky_prompt,
+            "environment": environment,
             "assets": layout["assets"],
         }
 
         print(f"[Scene Director] Plan ready ({layout['layout_source']}): "
-              f"{len(breakdown)} assets, terrain + skydome briefs prepared.")
+              f"{len(breakdown)} assets | {season} {time_of_day} | "
+              f"sun az {sun['azimuth_deg']} el {sun['elevation_deg']} {sun['color_hex']}")
 
         return (json.dumps(breakdown, indent=2),
                 layout["terrain_description"],
-                layout["skydome_prompt"],
+                terrain_texture_prompt,
+                sky_prompt,
                 json.dumps(layout_full, indent=2),
+                json.dumps(environment, indent=2),
                 len(breakdown))

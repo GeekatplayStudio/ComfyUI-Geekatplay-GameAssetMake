@@ -13,6 +13,7 @@ from .batch_concept_node import BatchConceptGeneratorNode
 from .local_hunyuan3d_node import LocalHunyuan3DGeneratorNode
 from .terrain_mesh_node import TerrainMeshBuilderNode
 from .scene_director_node import SceneDirectorNode
+from .layout_map_node import LayoutMapPreviewNode
 from .environment_export_node import EnvironmentAssetExportNode
 
 NODE_CLASS_MAPPINGS = {
@@ -27,6 +28,7 @@ NODE_CLASS_MAPPINGS = {
     "LocalHunyuan3DGeneratorNode": LocalHunyuan3DGeneratorNode,
     "TerrainMeshBuilderNode": TerrainMeshBuilderNode,
     "SceneDirectorNode": SceneDirectorNode,
+    "LayoutMapPreviewNode": LayoutMapPreviewNode,
     "EnvironmentAssetExportNode": EnvironmentAssetExportNode
 }
 
@@ -42,5 +44,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LocalHunyuan3DGeneratorNode": "🖥️ GameAssetMake Local 3D Generator (Hunyuan3D 2.1 — no API)",
     "TerrainMeshBuilderNode": "⛰️ GameAssetMake Terrain Mesh Builder (heightmap → mesh)",
     "SceneDirectorNode": "🎬 GameAssetMake Scene Director (prompt → full scene plan)",
+    "LayoutMapPreviewNode": "🗺️ GameAssetMake Layout Map (top-down placement preview)",
     "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)"
 }

@@ -27,6 +27,9 @@ class UnrealEngineBridgeNode:
             },
             "optional": {
                 "unreal_project_content_dir": ("STRING", {"default": ""}),
+                # Scene Director environment_json: sun azimuth/elevation/color ->
+                # a DirectionalLight is set up in the level automatically
+                "environment_json": ("STRING", {"forceInput": True}),
             }
         }
 
@@ -46,7 +49,8 @@ class UnrealEngineBridgeNode:
         unit_scale_factor=100.0,
         auto_place_in_level=True,
         auto_generate_collisions=True,
-        unreal_project_content_dir=""
+        unreal_project_content_dir="",
+        environment_json=""
     ):
         try:
             manifest = json.loads(completed_3d_manifest_json)
@@ -60,6 +64,12 @@ class UnrealEngineBridgeNode:
             "auto_generate_collisions": auto_generate_collisions,
             "assets": []
         }
+
+        if environment_json:
+            try:
+                import_payload["environment"] = json.loads(environment_json)
+            except Exception:
+                pass
 
         manifest, _skipped = filter_deliverable_assets(manifest, "Unreal Bridge")
 
