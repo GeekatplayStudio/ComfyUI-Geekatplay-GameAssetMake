@@ -37,6 +37,11 @@ class UnityEngineBridgeNode:
     CATEGORY = "Geekatplay GameAssetMake/Engine-Bridge"
     OUTPUT_NODE = True
 
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        # Side effect (network send to the editor) — must always re-run.
+        return float("NaN")
+
     def send_to_unity(
         self,
         completed_3d_manifest_json,

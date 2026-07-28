@@ -44,6 +44,13 @@ class UnrealEngineBridgeNode:
     CATEGORY = "Geekatplay GameAssetMake/Engine-Bridge"
     OUTPUT_NODE = True
 
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        # Sending to a live engine is a side effect: never skip it because the
+        # inputs happen to match a previous run. Without this, re-queueing an
+        # unchanged graph silently delivers nothing to Unreal.
+        return float("NaN")
+
     def send_to_unreal(
         self,
         completed_3d_manifest_json,

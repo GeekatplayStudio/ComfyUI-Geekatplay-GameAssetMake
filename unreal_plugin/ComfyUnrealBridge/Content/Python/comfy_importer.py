@@ -118,6 +118,24 @@ def _verify_terrain_size(actor, asset):
     actor.set_actor_location(unreal.Vector(loc.x, loc.y, loc.z - (origin.z - extent.z)), False, False)
 
 
+def _reimport_clean(dest_folder, dest_name):
+    """
+    Deletes any existing asset at this path before re-importing.
+
+    Re-importing over an asset that a material already references can leave the
+    old content in place (or spill the new content into a '_1' duplicate), which
+    is why a regenerated skydome/terrain map appeared to update once and then
+    never again.
+    """
+    path = f"{dest_folder.rstrip('/')}/{dest_name}"
+    try:
+        if unreal.EditorAssetLibrary.does_asset_exist(path):
+            unreal.EditorAssetLibrary.delete_asset(path)
+            unreal.log(f"[GameAssetMake] Removed stale asset {path} before re-import.")
+    except Exception as exc:
+        unreal.log_warning(f"[GameAssetMake] Could not remove stale asset {path}: {exc}")
+
+
 def _import_file(asset_tools, source_path, dest_folder, dest_name, options=None):
     task = unreal.AssetImportTask()
     task.filename = source_path
@@ -332,6 +350,7 @@ def _import_map(asset_tools, path, env_folder, name, kind):
     """
     if not path or not os.path.exists(path):
         return None
+    _reimport_clean(env_folder, name)
     _import_file(asset_tools, path, env_folder, name)
     tex = _find_texture(env_folder, name)
     if tex is None:
@@ -515,6 +534,7 @@ def _process_one_asset(asset, asset_tools, editor_actor_subsystem,
 
     # ---- image-based environment assets --------------------------------
     if is_image:
+        _reimport_clean(env_folder, asset_name)
         _import_file(asset_tools, source_path, env_folder, asset_name)
         unreal.log(f"[GameAssetMake] Imported {category or 'texture'} '{asset_name}' -> {env_folder}")
         if category in ("skydome", "skydome_hdri"):
