@@ -1,6 +1,6 @@
 {
   "last_node_id": 60,
-  "last_link_id": 25,
+  "last_link_id": 28,
   "nodes": [
     {
       "id": 1,
@@ -419,7 +419,8 @@
           "type": "IMAGE",
           "links": [
             12,
-            13
+            13,
+            22
           ],
           "slot_index": 0
         }
@@ -677,13 +678,91 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            22
+            23
           ],
           "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 25,
+      "type": "TerrainTextureFromHeightmapNode",
+      "pos": [
+        1460,
+        640
+      ],
+      "size": [
+        400,
+        260
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "heightmap",
+          "type": "IMAGE",
+          "link": 22
+        },
+        {
+          "name": "detail_texture",
+          "type": "IMAGE",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "terrain_texture",
+          "type": "IMAGE",
+          "links": [
+            24,
+            25
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TerrainTextureFromHeightmapNode"
+      },
+      "widgets_values": [
+        "summer",
+        1024,
+        1.0,
+        0.88,
+        0.35,
+        8,
+        0.8
+      ],
+      "title": "TERRAIN TEXTURE - elevation + slope aligned to the heightmap"
+    },
+    {
+      "id": 26,
+      "type": "PreviewImage",
+      "pos": [
+        1460,
+        940
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 24
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
       },
       "widgets_values": []
     },
@@ -696,7 +775,7 @@
       ],
       "size": [
         400,
-        280
+        300
       ],
       "flags": {},
       "order": 7,
@@ -710,7 +789,7 @@
         {
           "name": "ground_texture",
           "type": "IMAGE",
-          "link": 22
+          "link": 25
         }
       ],
       "outputs": [
@@ -718,7 +797,7 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            23
+            26
           ],
           "slot_index": 0
         },
@@ -733,6 +812,12 @@
           "type": "STRING",
           "links": [],
           "slot_index": 2
+        },
+        {
+          "name": "texture_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 3
         }
       ],
       "properties": {
@@ -745,7 +830,7 @@
         80.0,
         1
       ],
-      "title": "Terrain Mesh Builder (walkable mesh + baked texture)"
+      "title": "Terrain Mesh Builder (mesh + colour map exported for the engine)"
     },
     {
       "id": 55,
@@ -759,7 +844,7 @@
         260
       ],
       "flags": {},
-      "order": 19,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -770,7 +855,7 @@
         {
           "name": "terrain_manifest_json",
           "type": "STRING",
-          "link": 23
+          "link": 26
         },
         {
           "name": "skydome_manifest_json",
@@ -788,7 +873,7 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            24
+            27
           ],
           "slot_index": 0
         },
@@ -833,12 +918,12 @@
         {
           "name": "completed_3d_manifest_json",
           "type": "STRING",
-          "link": 24
+          "link": 27
         },
         {
           "name": "environment_json",
           "type": "STRING",
-          "link": 25
+          "link": 28
         }
       ],
       "outputs": [
@@ -883,7 +968,7 @@
         210
       ],
       "flags": {},
-      "order": 20,
+      "order": 22,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -891,7 +976,7 @@
           "name": "environment_json",
           "type": "STRING",
           "links": [
-            25
+            28
           ],
           "slot_index": 0
         },
@@ -1127,14 +1212,38 @@
     ],
     [
       22,
+      14,
+      0,
+      25,
+      0,
+      "IMAGE"
+    ],
+    [
+      23,
       24,
+      0,
+      25,
+      1,
+      "IMAGE"
+    ],
+    [
+      24,
+      25,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      25,
       0,
       9,
       1,
       "IMAGE"
     ],
     [
-      23,
+      26,
       9,
       0,
       55,
@@ -1142,7 +1251,7 @@
       "STRING"
     ],
     [
-      24,
+      27,
       55,
       0,
       10,
@@ -1150,7 +1259,7 @@
       "STRING"
     ],
     [
-      25,
+      28,
       60,
       0,
       10,

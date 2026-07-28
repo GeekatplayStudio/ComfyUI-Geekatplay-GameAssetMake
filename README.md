@@ -85,6 +85,8 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── layout_map_node.py            # 🗺️ Layout Map (top-down placement preview)
 │   ├── placement_manager_node.py     # 📐 Placement Manager (order, true scale, terrain snap)
 │   ├── terrain_mesh_node.py          # ⛰️ Terrain Mesh Builder (heightmap → mesh)
+│   ├── terrain_texture_node.py       # 🎨 Terrain Texture (aligned to the heightfield)
+│   ├── sun_environment_node.py       # ☀️ Sun / Environment (season + time → light)
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
 │   └── engine_check_node.py          # 🔌 Engine Connection Check

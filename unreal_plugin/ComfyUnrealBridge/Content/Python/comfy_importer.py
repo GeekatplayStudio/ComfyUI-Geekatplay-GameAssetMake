@@ -324,6 +324,69 @@ def _setup_sun(editor_actor_subsystem, environment):
         return False
 
 
+def _apply_terrain_material(asset_tools, editor_actor_subsystem, actor, asset, env_folder):
+    """
+    Imports the terrain colour map and applies it as a real material on the
+    terrain actor - the same explicit approach used for the skydome, because
+    glTF imports do not reliably surface the embedded texture.
+    """
+    texture_path = asset.get("texture_path")
+    if not texture_path:
+        unreal.log("[GameAssetMake] Terrain has no separate colour map; relying on "
+                   "whatever the glTF import produced.")
+        return False
+    if not os.path.exists(texture_path):
+        unreal.log_warning(f"[GameAssetMake] Terrain colour map not found on disk: {texture_path}")
+        return False
+
+    name = asset.get("name", "Terrain").replace(" ", "_")
+    tex_name = f"T_{name}_Color"
+    try:
+        _import_file(asset_tools, texture_path, env_folder, tex_name)
+        texture = _find_texture(env_folder, tex_name)
+        if texture is None:
+            unreal.log_error(f"[GameAssetMake] Imported terrain colour map but could not "
+                             f"locate the texture asset in {env_folder}.")
+            return False
+
+        mat_name = f"M_{name}_Terrain"
+        mat_path = f"{env_folder.rstrip('/')}/{mat_name}"
+        material = None
+        if unreal.EditorAssetLibrary.does_asset_exist(mat_path):
+            material = unreal.EditorAssetLibrary.load_asset(mat_path)
+        if material is None:
+            material = asset_tools.create_asset(mat_name, env_folder.rstrip('/'),
+                                                unreal.Material, unreal.MaterialFactoryNew())
+        if material is None:
+            unreal.log_error(f"[GameAssetMake] Could not create terrain material {mat_path}")
+            return False
+
+        mel = unreal.MaterialEditingLibrary
+        try:
+            mel.delete_all_material_expressions(material)
+        except Exception:
+            pass
+        sample = mel.create_material_expression(
+            material, unreal.MaterialExpressionTextureSample, -400, 0)
+        sample.set_editor_property("texture", texture)
+        mel.connect_material_property(sample, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+        # terrain reads better fully rough and non-metallic
+        rough = mel.create_material_expression(
+            material, unreal.MaterialExpressionConstant, -400, 300)
+        rough.set_editor_property("r", 0.92)
+        mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+        mel.recompile_material(material)
+        unreal.EditorAssetLibrary.save_asset(mat_path)
+
+        actor.static_mesh_component.set_material(0, material)
+        unreal.log(f"[GameAssetMake] Terrain material applied: {mat_path} "
+                   f"(texture {texture.get_name()})")
+        return True
+    except Exception as exc:
+        unreal.log_error(f"[GameAssetMake] Terrain material step failed: {exc}")
+        return False
+
+
 def import_and_place_manifest_payload(payload_dict):
     """
     Imports every asset in the payload into the Content Browser and places it
@@ -445,6 +508,8 @@ def _process_one_asset(asset, asset_tools, editor_actor_subsystem,
             actor = _spawn_placed(editor_actor_subsystem, mesh, terrain_asset, 100.0)
             if actor:
                 _verify_terrain_size(actor, asset)
+                _apply_terrain_material(asset_tools, editor_actor_subsystem,
+                                        actor, asset, env_folder)
         else:
             actor = _spawn_placed(editor_actor_subsystem, mesh, asset, 100.0)
             if actor:

@@ -96,6 +96,8 @@ class UnrealEngineBridgeNode:
                 "ground_z_cm": item.get("ground_z_cm"),
                 "verify_world_size": item.get("verify_world_size", False),
                 "terrain_world_size_m": item.get("terrain_world_size_m"),
+                # separate colour map so the engine can build an explicit material
+                "texture_path": item.get("texture_path"),
             }
             import_payload["assets"].append(asset_entry)
 

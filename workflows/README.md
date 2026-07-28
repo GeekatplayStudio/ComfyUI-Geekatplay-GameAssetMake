@@ -26,6 +26,17 @@ Type *"medieval village in a green valley"* into the **Scene Director** node and
 
 The gallery is the human-in-the-loop stop: nothing is spent on 3D generation until you approve. Re-queue with a different seed to redo any branch.
 
+### 🎨 Terrain textures derived from the heightfield
+
+The terrain colour map is generated **from the heightmap itself**, not from a separate text prompt — the two-step "heightmap → matching texture" approach from the author's [ai-terrain](https://github.com/GeekatplayStudio/ai-terrain) project, done locally so alignment is exact rather than approximate:
+
+- **Elevation bands** — water → shore → grass → upland → rock → snow, with **season palettes** (summer/spring/autumn/winter).
+- **Slope-aware rock** — steep faces become bare rock; snow settles on flat high ground and sheds off cliffs.
+- **Area equalization** (`equalize`, default 0.8) — generated heightmaps are shaded reliefs with skewed histograms, so bands are spread by *area* instead of raw brightness. Without this, an absolute snow line turns half the map into a glacier.
+- **Optional tileable detail** — the generated PBR material can be multiplied over the top for surface grain without breaking alignment.
+
+The result is written **both** into the terrain `.glb` and as a separate `_color.png`. The engine importer builds an explicit **material** from that PNG and applies it to the terrain actor — exactly the pattern the skydome uses — because glTF import pipelines don't reliably surface an embedded texture.
+
 ### ☀️ Lighting in every workflow
 
 Every workflow that delivers to an engine includes a light source, because assets imported into a level with no light render black:

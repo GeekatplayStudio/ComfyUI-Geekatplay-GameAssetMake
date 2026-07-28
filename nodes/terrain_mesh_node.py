@@ -76,8 +76,8 @@ class TerrainMeshBuilderNode:
             },
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("completed_3d_manifest_json", "mesh_path", "heightmap16_path")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("completed_3d_manifest_json", "mesh_path", "heightmap16_path", "texture_path")
     FUNCTION = "build_terrain"
     CATEGORY = "Geekatplay GameAssetMake/Environment"
     OUTPUT_NODE = True
@@ -117,10 +117,17 @@ class TerrainMeshBuilderNode:
         # --- displaced mesh ---
         vertices, faces, uvs = build_terrain_mesh(field, world_size_m, height_m)
 
+        # The texture is BOTH embedded in the glb (for DCC round-trips) and saved
+        # as a separate PNG, because game engines import glTF through pipelines
+        # that may not surface the embedded image — the engine importer builds an
+        # explicit material from this file, the same way the skydome does.
         texture_image = None
+        texture_path = ""
         if ground_texture is not None:
             tex = np.clip(ground_texture[0].cpu().numpy() * 255.0, 0, 255).astype(np.uint8)
             texture_image = PILImage.fromarray(tex[..., :3], mode="RGB")
+            texture_path = os.path.join(out_dir, f"{safe}_color.png")
+            texture_image.save(texture_path)
 
         mesh_path = os.path.join(out_dir, f"{safe}.glb")
         save_glb(vertices, faces, mesh_path, {}, uvs=uvs,
@@ -146,8 +153,9 @@ class TerrainMeshBuilderNode:
             "world_rotation_yaw": 0.0,
             "generation_status": "TERRAIN_MESH_OK",
             "heightmap16_path": png16_path,
+            "texture_path": texture_path,
             "terrain_world_size_m": world_size_m,
             "terrain_height_m": height_m,
         }]
 
-        return (json.dumps(manifest, indent=2), mesh_path, png16_path)
+        return (json.dumps(manifest, indent=2), mesh_path, png16_path, texture_path)
