@@ -101,6 +101,10 @@ app.registerExtension({
         `;
 
         node.addDOMWidget("interactive_gallery", "gallery_ui", widgetContainer, {
+            // This is presentation-only state. Serializing it changes the
+            // positional widgets_values array and can corrupt the real inputs
+            // when the workflow is opened by another frontend version.
+            serialize: false,
             getValue() { return widgetContainer.dataset.payload || ""; },
             setValue(val) { widgetContainer.dataset.payload = val; },
         });

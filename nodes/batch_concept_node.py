@@ -96,7 +96,12 @@ class BatchConceptGeneratorNode:
                 "cfg": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 20.0, "step": 0.1}),
                 "sampler_name": (samplers, {"default": "euler"}),
                 "scheduler": (schedulers, {"default": "simple"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 0xffffffffffffffff,
+                    "control_after_generate": True,
+                }),
                 "latent_channels": ([16, 4], {"default": 16}),
             },
             "optional": {

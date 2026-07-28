@@ -56,7 +56,16 @@ class LocalHunyuan3DGeneratorNode:
                 "cfg": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 20.0, "step": 0.1}),
                 "sampler_name": (samplers, {"default": "euler"}),
                 "scheduler": (schedulers, {"default": "normal"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+                # Keep the frontend's companion "randomize/fixed/increment" widget
+                # stable.  The bundled workflows serialize that companion value,
+                # so omitting this flag can shift every widget after seed when a
+                # workflow is loaded by a newer frontend.
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 0xffffffffffffffff,
+                    "control_after_generate": True,
+                }),
                 "latent_resolution": ("INT", {"default": 4096, "min": 1, "max": 8192, "step": 256,
                                               "tooltip": "Hunyuan3D latent token count — higher is more detail, slower."}),
                 "octree_resolution": ("INT", {"default": 256, "min": 16, "max": 1024, "step": 16,

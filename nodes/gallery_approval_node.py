@@ -79,13 +79,22 @@ class GalleryApprovalNode:
             except Exception:
                 pass
 
+        # Images pair 1:1 with manifest entries. Recycling one image across several
+        # assets (the old `idx % len` behaviour) silently made every asset produce an
+        # IDENTICAL mesh, so a mismatch is reported loudly and the extra assets are
+        # dropped rather than duplicated.
+        if len(saved_image_paths) != len(manifest):
+            print(f"[GameAssetMake Gallery] WARNING: {len(saved_image_paths)} concept image(s) "
+                  f"but {len(manifest)} manifest asset(s). Each asset needs its own image — "
+                  f"only the first {min(len(saved_image_paths), len(manifest))} will be used. "
+                  f"Use the Batch Concept Generator (one image per asset) to keep these in sync.")
+
         for idx, item in enumerate(manifest):
-            if saved_image_paths:
-                img_path = saved_image_paths[idx % len(saved_image_paths)]
-                img_file = saved_image_files[idx % len(saved_image_files)]
-            else:
-                img_path = ""
-                img_file = ""
+            if idx >= len(saved_image_paths):
+                print(f"[GameAssetMake Gallery] Skipping '{item.get('name', idx)}' — no concept image for it.")
+                continue
+            img_path = saved_image_paths[idx]
+            img_file = saved_image_files[idx]
 
             item_copy = dict(item)
             item_copy["image_path"] = img_path

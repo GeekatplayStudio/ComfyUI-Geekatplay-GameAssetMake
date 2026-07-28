@@ -2,7 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from .engine_check_node import ping_engine_bridge
+from .engine_check_node import ping_engine_bridge, filter_deliverable_assets
 
 class UnityEngineBridgeNode:
     """
@@ -40,6 +40,8 @@ class UnityEngineBridgeNode:
             manifest = json.loads(completed_3d_manifest_json)
         except Exception:
             manifest = []
+
+        manifest, _skipped = filter_deliverable_assets(manifest, "Unity Bridge")
 
         payload = {
             "target_assets_folder": target_assets_folder,

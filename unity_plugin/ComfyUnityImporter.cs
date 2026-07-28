@@ -135,9 +135,21 @@ namespace GeekatplayGameForge
                 }
 
                 string safeName = string.IsNullOrEmpty(asset.name) ? "GeneratedAsset" : asset.name.Replace(' ', '_');
-                string destFile = safeName + Path.GetExtension(asset.model_path);
+                // Prefix with the asset id: two assets sharing a name would otherwise
+                // overwrite each other and only the last one would survive.
+                string idPrefix = string.IsNullOrEmpty(asset.id) ? "" : asset.id.Replace(' ', '_') + "_";
+                string ext = Path.GetExtension(asset.model_path);
+                string destFile = idPrefix + safeName + ext;
                 string destAbs = Path.Combine(absTarget, destFile);
                 File.Copy(asset.model_path, destAbs, true);
+
+                if (ext.Equals(".glb", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".gltf", StringComparison.OrdinalIgnoreCase))
+                {
+                    Debug.LogWarning($"[Geekatplay GameAssetMake] '{destFile}' is glTF. Unity has no " +
+                        "built-in glTF importer — install glTFast (com.unity.cloud.gltfast) or UnityGLTF, " +
+                        "or generate FBX instead, otherwise no prefab will be created for it.");
+                }
 
                 importedAssetPaths.Add(targetFolder + "/" + destFile);
                 assetMeta.Add(asset);
@@ -150,7 +162,13 @@ namespace GeekatplayGameForge
                 for (int i = 0; i < importedAssetPaths.Count; i++)
                 {
                     var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(importedAssetPaths[i]);
-                    if (prefab == null) continue;
+                    if (prefab == null)
+                    {
+                        Debug.LogWarning($"[Geekatplay GameAssetMake] Imported '{importedAssetPaths[i]}' " +
+                            "but Unity produced no GameObject for it, so nothing was placed in the scene. " +
+                            "For .glb/.gltf this means no glTF importer package is installed.");
+                        continue;
+                    }
 
                     var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
                     var meta = assetMeta[i];

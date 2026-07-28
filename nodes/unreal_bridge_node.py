@@ -3,7 +3,7 @@ import json
 import socket
 import urllib.request
 import urllib.error
-from .engine_check_node import ping_engine_bridge
+from .engine_check_node import ping_engine_bridge, filter_deliverable_assets
 
 class UnrealEngineBridgeNode:
     """
@@ -60,6 +60,8 @@ class UnrealEngineBridgeNode:
             "auto_generate_collisions": auto_generate_collisions,
             "assets": []
         }
+
+        manifest, _skipped = filter_deliverable_assets(manifest, "Unreal Bridge")
 
         for item in manifest:
             asset_entry = {

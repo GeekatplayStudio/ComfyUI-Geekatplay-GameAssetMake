@@ -167,7 +167,12 @@ class SingleObjectGuardrailNode:
                 "sampler_name": (samplers, {"default": "euler"}),
                 "scheduler": (schedulers, {"default": "simple"}),
                 "latent_channels": ([16, 4], {"default": 16}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 0xffffffffffffffff,
+                    "control_after_generate": True,
+                }),
             },
             "optional": {
                 "model": ("MODEL",),
