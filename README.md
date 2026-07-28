@@ -40,16 +40,14 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 ```mermaid
 flowchart TD
-    Prompt["Natural Language Prompt"] --> Planner["🎮 GameAssetMake Asset Planner\n(builds asset manifest, 30+ art styles)"]
-    Planner --> ConceptGen["2D Concept Sampler\n(Z-Image Turbo recommended · ~7.5s/image)\none object · 3/4 view · isolated on white"]
-    ConceptGen --> GalleryUI["🖼️ Asset Gallery & Approval UI\n(inspect, approve, pick PBR/rigging)"]
+    Prompt["Natural Language Prompt\n(optionally via 🎬 Scene Director for a full scene)"] --> Planner["🎮 GameAssetMake Asset Planner\n(builds asset manifest, 30+ art styles)"]
+    Planner --> ConceptGen["🔁 Batch Concept Generator\n(Z-Image Turbo · one image per asset · ~7.5s each)"]
+    ConceptGen --> Guardrail["🛡️ Single-Object Guardrail\n(heuristic + Ollama VLM, auto-retry)"]
+    Guardrail --> GalleryUI["🖼️ Asset Gallery & Approval UI\n(inspect, approve, pick PBR/rigging)"]
     GalleryUI -->|"approved assets"| Unified3D["🧊 Unified 3D Generator\n(engine chosen globally)"]
-    Unified3D -->|"Tripo3D API"| Tripo["Tripo3D\nImage-to-3D · Quad Mesh · PBR · Auto-Rig"]
-    Unified3D -->|"Meshy API"| Meshy["Meshy\nImage-to-3D · PBR Maps · Poly Targets"]
-    Unified3D -->|"Hitem3D API"| Hitem["Hitem3D (experimental)\nImage-to-3D"]
-    Tripo --> Models[".FBX / .GLB Models\n+ results panel on the node"]
-    Meshy --> Models
-    Hitem --> Models
+    GalleryUI -->|"or: no API needed"| LocalGen["🖥️ Local 3D Generator\n(Hunyuan3D 2.1, on-GPU)"]
+    Unified3D -->|"Tripo3D / Meshy / HiTem3D"| Models[".FBX / .GLB Models\n+ results panel on the node"]
+    LocalGen --> Models
     Check["🔌 Engine Connection Check\n(verifies bridge is online)"] -.-> UnrealBridge
     Check -.-> UnityBridge
     Models --> UnrealBridge["⚡ Unreal Engine Bridge"]
@@ -98,12 +96,17 @@ ComfyUI-Geekatplay-GameAssetMake/
 │           └── comfy_importer.py
 ├── unity_plugin/
 │   └── ComfyUnityImporter.cs         # Unity Editor bridge script
-└── workflows/                        # Ready-to-load workflows
-    ├── gameassetmake_unreal.json     # Universal 3D asset pipeline → UE5
-    ├── gameassetmake_unity.json      # Universal 3D asset pipeline → Unity
-    ├── gameassetmake_terrain.json    # Terrain heightmap from description
-    ├── gameassetmake_skydome.json    # 360° skydome HDRI
-    └── gameassetmake_textures.json   # Seamless PBR materials
+├── workflows/                         # Ready-to-load workflows
+│   ├── gameassetmake_unreal.json     # Universal 3D asset pipeline → UE5
+│   ├── gameassetmake_unity.json      # Universal 3D asset pipeline → Unity
+│   ├── gameassetmake_terrain.json    # Terrain heightmap from description
+│   ├── gameassetmake_skydome.json    # 360° skydome HDRI
+│   ├── gameassetmake_textures.json   # Seamless PBR materials
+│   ├── gameassetmake_local_hunyuan3d_unreal.json  # Local 3D (no API) → UE5
+│   ├── gameassetmake_local_hunyuan3d_unity.json   # Local 3D (no API) → Unity
+│   └── gameassetmake_full_scene_unreal.json       # 🎬 Full scene from one prompt
+└── tools/
+    └── validate_workflows.py         # Connection validator (run after editing workflows)
 ```
 
 ---
@@ -163,7 +166,15 @@ $env:TRIPO_API_KEY = "your_tripo_key"
 $env:MESHY_API_KEY = "your_meshy_key"
 ```
 
-...or simply paste them into the **🧊 GameAssetMake 3D Generator** node's `tripo_api_key` / `meshy_api_key` fields. Until you add keys, leave `dry_run_mock` **ON** — the pipeline still runs end-to-end and produces placeholder mesh files so you can validate the workflow for free.
+...or simply paste them into the **🧊 GameAssetMake 3D Generator** node's `tripo_api_key` / `meshy_api_key` fields (HiTem3D: `hitem3d_access_key` + `hitem3d_secret_key`, both required). Typed keys are saved to the OS credential vault automatically (`remember_keys` is on by default) — enter each one once and every workflow picks it up from then on, nothing is stored in workflow JSON. Until you add keys, leave `dry_run_mock` **ON** — the pipeline still runs end-to-end and produces placeholder mesh files so you can validate the workflow for free (the engine bridges automatically refuse to ship these placeholders into Unreal/Unity).
+
+### 5. Optional: local 3D generation (no API keys, no credits)
+
+Download [`hunyuan_3d_v2.1.safetensors`](https://huggingface.co/Comfy-Org/hunyuan3D_2.1_repackaged/resolve/main/hunyuan_3d_v2.1.safetensors) (~7.4 GB) into `ComfyUI/models/checkpoints/` to use the `gameassetmake_local_hunyuan3d_*` workflows — 3D meshes are then generated entirely on your own GPU, nothing uploaded, no account needed.
+
+### 6. Optional: Ollama for the Single-Object Guardrail and Scene Director
+
+The 🛡️ guardrail's VLM check and the 🎬 Scene Director's layout planning use a local [Ollama](https://ollama.com) server (`http://127.0.0.1:11434` by default, model `gemma3`/`qwen2.5:7b`). Both fall back automatically — the guardrail to a heuristic-only check, the Scene Director to a deterministic seeded layout — so Ollama is optional, not required.
 
 ---
 
@@ -209,18 +220,26 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 | Symptom | Fix |
 |---|---|
 | Bridge shows OFFLINE on the Connection Check node | Confirm the target editor (Unreal or Unity) is actually open with the plugin/script installed and enabled; check `host`/`port` match; a firewall may be blocking localhost traffic. |
-| Unreal never receives assets | Confirm the Output Log shows the bridge listener started on `30010`; check the plugin is enabled under Edit → Plugins; make sure ComfyUI and Unreal are on the same host or set `unreal_host` correctly. |
+| Unreal never receives assets | Confirm the Output Log shows the bridge listener started on `30010`; check the plugin is enabled under Edit → Plugins; make sure ComfyUI and Unreal are on the same host or set `unreal_host` correctly. After editing/updating the plugin files, **restart the Unreal Editor** — its Python modules are cached and won't pick up changes otherwise. |
 | Unity never receives assets | Port `8080` may already be in use — change `Port` in `ComfyUnityImporter.cs` and `unity_port` on the node to match; confirm the Console shows the listener started. |
+| `.glb` assets import but nothing appears in the Unity scene | Unity has no built-in glTF importer. Install **glTFast** (`com.unity.cloud.gltfast`) or **UnityGLTF**, or set the 3D Generator's `output_format` to `FBX` instead. |
+| Nothing lands in the engine even though the run "succeeded" | Check the console for `"Skipping N asset(s) that are not real meshes"` — this means `dry_run_mock` was left ON, so every model was a placeholder stub; the bridges refuse to ship those. Turn `dry_run_mock` off (or use a local Hunyuan3D workflow). |
+| Every generated 3D model looks identical | The number of concept images must equal the number of manifest assets — use the 🔁 Batch Concept Generator (which renders one image per asset) rather than a single `CLIPTextEncode`/`KSampler` feeding a batch; a count mismatch is now reported loudly in the console instead of silently reusing one image. |
 | Nodes don't show up in ComfyUI | Confirm the folder is directly inside `custom_nodes/` (not nested one level deeper) and restart ComfyUI; check the console for import errors. |
 | Live API calls fail | Check the `generation_status` field per asset in the 3D Generator's output manifest — failures are recorded per-asset without stopping the rest of the batch. Verify your API key and account credit balance. |
-| Gallery images don't display | Make sure the upstream 2D sampler batch size matches (or exceeds) `target_asset_count`; images are cycled if fewer are supplied than assets. |
+| Gallery images don't display | Make sure the upstream 2D sampler batch size matches (or exceeds) `target_asset_count`; a mismatch is now logged and any assets without an image are skipped rather than reusing an existing one. |
+| A workflow won't load or a node reports missing inputs after an edit | Run `python tools/validate_workflows.py` (with ComfyUI running) — it checks every workflow's links, required inputs, and widget counts against the live node definitions and reports exactly what's wrong. |
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Additional 3D backends (Rodin, Hunyuan3D) — Hitem3D added (experimental)
-- [ ] Verify/finalize the Hitem3D endpoint against official API docs
+- [x] Local 3D generation with Hunyuan3D 2.1 (no API/keys/credits)
+- [x] Full scene from one prompt (Scene Director: terrain + skydome + positioned assets)
+- [x] Terrain as a real walkable mesh (not just a heightmap texture)
+- [x] HiTem3D live-verified with correct two-key (AK/SK) auth
+- [ ] Additional cloud 3D backends (Rodin)
+- [ ] Native Unreal Landscape creation (currently: mesh terrain + optional manual Landscape import)
 - [ ] In-gallery per-asset prompt re-roll
 - [ ] Direct Unreal Remote Control API material graph customization
 - [ ] Unity Addressables export mode
