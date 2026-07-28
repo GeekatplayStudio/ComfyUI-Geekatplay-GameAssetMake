@@ -36,6 +36,25 @@ def import_and_place_manifest_payload(payload_dict):
         asset_name = asset.get("name", "GeneratedAsset").replace(" ", "_")
         rig_type = asset.get("rig_type", "none")
         is_skeletal = (rig_type != "none")
+        category = asset.get("category", "")
+        ext = source_path.rsplit(".", 1)[-1].lower()
+
+        # Environment assets (terrain heightmaps, skydome HDRIs, textures)
+        # import as texture assets — no FBX options, no actor spawn
+        if category in ("terrain", "skydome", "texture") or ext in ("png", "jpg", "jpeg", "exr", "hdr", "tga"):
+            env_task = unreal.AssetImportTask()
+            env_task.filename = source_path
+            env_task.destination_path = f"{target_folder.rstrip('/')}/Environment"
+            env_task.destination_name = asset_name
+            env_task.replace_existing = True
+            env_task.automated = True
+            asset_tools.import_asset_tasks([env_task])
+            unreal.log(f"[ComfyUI Bridge] Imported {category or 'texture'} '{asset_name}' into {env_task.destination_path}")
+            if category == "terrain":
+                unreal.log(f"[ComfyUI Bridge] Heightmap ready — create a Landscape via "
+                           f"Mode > Landscape > Import from File using: {source_path}")
+            imported_count += 1
+            continue
 
         # Configure Unreal Asset Import Task
         task = unreal.AssetImportTask()

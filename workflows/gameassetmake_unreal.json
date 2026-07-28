@@ -1,6 +1,6 @@
 {
-  "last_node_id": 13,
-  "last_link_id": 13,
+  "last_node_id": 14,
+  "last_link_id": 18,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,8 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            1
+            1,
+            12
           ],
           "slot_index": 0
         }
@@ -48,7 +49,7 @@
         110
       ],
       "flags": {},
-      "order": 1,
+      "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -57,7 +58,8 @@
           "type": "CLIP",
           "links": [
             2,
-            3
+            3,
+            13
           ],
           "slot_index": 0
         }
@@ -84,7 +86,7 @@
         60
       ],
       "flags": {},
-      "order": 2,
+      "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -92,7 +94,8 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            9
+            9,
+            14
           ],
           "slot_index": 0
         }
@@ -117,7 +120,7 @@
         260
       ],
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "inputs": [
         {
@@ -149,7 +152,7 @@
         {
           "name": "count",
           "type": "INT",
-          "links": null,
+          "links": [],
           "slot_index": 2
         }
       ],
@@ -177,7 +180,7 @@
         120
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [
         {
@@ -224,7 +227,7 @@
         120
       ],
       "flags": {},
-      "order": 5,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -263,7 +266,7 @@
         110
       ],
       "flags": {},
-      "order": 6,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -298,7 +301,7 @@
         260
       ],
       "flags": {},
-      "order": 7,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -358,7 +361,7 @@
         60
       ],
       "flags": {},
-      "order": 8,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -388,18 +391,18 @@
       "widgets_values": []
     },
     {
-      "id": 8,
-      "type": "GalleryApprovalNode",
+      "id": 14,
+      "type": "SingleObjectGuardrailNode",
       "pos": [
-        1200,
+        1120,
         200
       ],
       "size": [
-        420,
-        520
+        380,
+        420
       ],
       "flags": {},
-      "order": 9,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -411,6 +414,95 @@
           "name": "asset_manifest_json",
           "type": "STRING",
           "link": 11
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 12
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 13
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "verified_images",
+          "type": "IMAGE",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "asset_manifest_json",
+          "type": "STRING",
+          "links": [
+            16
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "verification_report_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 2
+        },
+        {
+          "name": "all_passed",
+          "type": "BOOLEAN",
+          "links": [],
+          "slot_index": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SingleObjectGuardrailNode"
+      },
+      "widgets_values": [
+        "heuristic+vlm",
+        2,
+        8,
+        1.0,
+        "euler",
+        "simple",
+        16,
+        0,
+        "fixed",
+        "http://127.0.0.1:11434",
+        "gemma3"
+      ],
+      "title": "\ud83d\udee1\ufe0f Guardrail: one object per image (VLM + auto-retry)"
+    },
+    {
+      "id": 8,
+      "type": "GalleryApprovalNode",
+      "pos": [
+        1560,
+        200
+      ],
+      "size": [
+        420,
+        520
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15
+        },
+        {
+          "name": "asset_manifest_json",
+          "type": "STRING",
+          "link": 16
         }
       ],
       "outputs": [
@@ -418,20 +510,20 @@
           "name": "approved_assets_json",
           "type": "STRING",
           "links": [
-            12
+            17
           ],
           "slot_index": 0
         },
         {
           "name": "image_paths_json",
           "type": "STRING",
-          "links": null,
+          "links": [],
           "slot_index": 1
         },
         {
           "name": "approved_count",
           "type": "INT",
-          "links": null,
+          "links": [],
           "slot_index": 2
         }
       ],
@@ -447,21 +539,21 @@
       "id": 9,
       "type": "Unified3DGeneratorNode",
       "pos": [
-        1680,
+        2040,
         200
       ],
       "size": [
-        380,
-        320
+        420,
+        360
       ],
       "flags": {},
-      "order": 10,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "approved_assets_json",
           "type": "STRING",
-          "link": 12
+          "link": 17
         }
       ],
       "outputs": [
@@ -469,14 +561,14 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            13
+            18
           ],
           "slot_index": 0
         },
         {
           "name": "asset_count",
           "type": "INT",
-          "links": null,
+          "links": [],
           "slot_index": 1
         }
       ],
@@ -484,22 +576,23 @@
         "Node name for S&R": "Unified3DGeneratorNode"
       },
       "widgets_values": [
-        "",
-        "",
-        "",
-        "hitem3d",
+        "tripo",
         "FBX",
         "quad",
         15000,
+        true,
+        "",
+        "",
+        "",
         true
       ],
-      "title": "3D Generator \u2014 Unreal Engine 5 + Hitem3D (experimental)"
+      "title": "3D Generator \u2014 pick engine: Tripo / Meshy / HiTem3D (keys auto-load from vault)"
     },
     {
       "id": 10,
       "type": "UnrealEngineBridgeNode",
       "pos": [
-        2120,
+        2560,
         200
       ],
       "size": [
@@ -507,13 +600,13 @@
         320
       ],
       "flags": {},
-      "order": 11,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
           "name": "completed_3d_manifest_json",
           "type": "STRING",
-          "link": 13
+          "link": 18
         },
         {
           "name": "unreal_project_content_dir",
@@ -528,19 +621,19 @@
         {
           "name": "unreal_import_payload_json",
           "type": "STRING",
-          "links": null,
+          "links": [],
           "slot_index": 0
         },
         {
           "name": "imported_count",
           "type": "INT",
-          "links": null,
+          "links": [],
           "slot_index": 1
         },
         {
           "name": "success",
           "type": "BOOLEAN",
-          "links": null,
+          "links": [],
           "slot_index": 2
         }
       ],
@@ -562,7 +655,7 @@
       "id": 11,
       "type": "EngineConnectionCheckNode",
       "pos": [
-        2120,
+        2560,
         620
       ],
       "size": [
@@ -570,20 +663,20 @@
         160
       ],
       "flags": {},
-      "order": 12,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "engine_online",
           "type": "BOOLEAN",
-          "links": null,
+          "links": [],
           "slot_index": 0
         },
         {
           "name": "status_message",
           "type": "STRING",
-          "links": null,
+          "links": [],
           "slot_index": 1
         }
       ],
@@ -675,7 +768,7 @@
       10,
       7,
       0,
-      8,
+      14,
       0,
       "IMAGE"
     ],
@@ -683,12 +776,52 @@
       11,
       2,
       0,
-      8,
+      14,
       1,
       "STRING"
     ],
     [
       12,
+      1,
+      0,
+      14,
+      2,
+      "MODEL"
+    ],
+    [
+      13,
+      12,
+      0,
+      14,
+      3,
+      "CLIP"
+    ],
+    [
+      14,
+      13,
+      0,
+      14,
+      4,
+      "VAE"
+    ],
+    [
+      15,
+      14,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      14,
+      1,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      17,
       8,
       0,
       9,
@@ -696,7 +829,7 @@
       "STRING"
     ],
     [
-      13,
+      18,
       9,
       0,
       10,
@@ -708,7 +841,7 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Unreal Engine 5 + Hitem3D (experimental)",
+      "name": "Geekatplay GameAssetMake \u2014 Universal 3D Asset Pipeline (Unreal)",
       "author": "Geekatplay Studio \u2014 Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }

@@ -13,8 +13,10 @@ from .meshy_api import (
 )
 from .hitem3d_api import (
     submit_hitem3d_image_to_3d,
-    poll_hitem3d_task
+    poll_hitem3d_task,
+    extract_model_url
 )
+from . import keystore
 
 class Unified3DGeneratorNode:
     """
@@ -27,14 +29,20 @@ class Unified3DGeneratorNode:
         return {
             "required": {
                 "approved_assets_json": ("STRING", {"forceInput": True}),
-                "tripo_api_key": ("STRING", {"default": "", "multiline": False}),
-                "meshy_api_key": ("STRING", {"default": "", "multiline": False}),
-                "hitem3d_api_key": ("STRING", {"default": "", "multiline": False}),
                 "engine": (["tripo", "meshy", "hitem3d"], {"default": "tripo"}),
                 "output_format": (["FBX", "GLB", "OBJ"], {"default": "FBX"}),
                 "default_topology": (["quad", "triangle"], {"default": "quad"}),
                 "target_face_count": ("INT", {"default": 15000, "min": 1000, "max": 100000, "step": 1000}),
                 "dry_run_mock": ("BOOLEAN", {"default": True, "label_on": "Enable Mocking (No API Usage)", "label_off": "Live Cloud APIs"}),
+            },
+            "optional": {
+                # Keys are OPTIONAL: stored keys (OS credential vault / env vars) are
+                # used automatically. Type a key once with remember_keys ON to save it
+                # locally — keys are never written into workflow JSON.
+                "tripo_api_key": ("STRING", {"default": "", "multiline": False, "password": True}),
+                "meshy_api_key": ("STRING", {"default": "", "multiline": False, "password": True}),
+                "hitem3d_api_key": ("STRING", {"default": "", "multiline": False, "password": True, "placeholder": "AccessKey:SecretKey"}),
+                "remember_keys": ("BOOLEAN", {"default": True, "label_on": "Save typed keys to OS vault", "label_off": "Use typed keys once"}),
             }
         }
 
@@ -44,15 +52,17 @@ class Unified3DGeneratorNode:
     CATEGORY = "Geekatplay GameAssetMake/3D-Generator"
     OUTPUT_NODE = True
 
-    def generate_3d_assets(self, approved_assets_json, tripo_api_key="", meshy_api_key="", hitem3d_api_key="", engine="tripo", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True):
+    def generate_3d_assets(self, approved_assets_json, engine="tripo", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True, tripo_api_key="", meshy_api_key="", hitem3d_api_key="", remember_keys=True):
         try:
             assets = json.loads(approved_assets_json)
         except Exception:
             assets = []
 
-        tripo_key = tripo_api_key or os.getenv("TRIPO_API_KEY", "")
-        meshy_key = meshy_api_key or os.getenv("MESHY_API_KEY", "")
-        hitem3d_key = hitem3d_api_key or os.getenv("HITEM3D_API_KEY", "")
+        # Typed keys win (and are persisted when remember_keys is on);
+        # otherwise keys come from the OS credential vault / env vars.
+        tripo_key = keystore.resolve_key("tripo", tripo_api_key, remember_keys)
+        meshy_key = keystore.resolve_key("meshy", meshy_api_key, remember_keys)
+        hitem3d_key = keystore.resolve_key("hitem3d", hitem3d_api_key, remember_keys)
 
         output_dir = os.path.join(folder_paths.get_output_directory(), "3d_game_assets")
         os.makedirs(output_dir, exist_ok=True)
@@ -134,13 +144,12 @@ class Unified3DGeneratorNode:
                         task_id = submit_hitem3d_image_to_3d(
                             hitem3d_key,
                             img_path,
-                            target_poly_count=target_face_count,
-                            enable_pbr=inc_texture
+                            target_poly_count=max(100000, target_face_count),
+                            enable_pbr=inc_texture,
+                            output_format=output_format.lower() if output_format.lower() in ("obj", "glb", "fbx") else "glb"
                         )
                         res = poll_hitem3d_task(hitem3d_key, task_id)
-
-                        model_urls = res.get("model_urls") or res.get("output") or {}
-                        model_url = model_urls.get(output_format.lower()) or model_urls.get("glb") or model_urls.get("model")
+                        model_url = extract_model_url(res)
 
                         if model_url:
                             download_file(model_url, model_dest_path)

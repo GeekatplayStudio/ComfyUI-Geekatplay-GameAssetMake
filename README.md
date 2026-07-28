@@ -73,7 +73,10 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── gallery_approval_node.py      # 🖼️ Gallery & Approval UI
 │   ├── tripo_api.py                  # Tripo3D API client
 │   ├── meshy_api.py                  # Meshy API client
-│   ├── hitem3d_api.py                # Hitem3D API client (experimental)
+│   ├── hitem3d_api.py                # HiTem3D API client (two-key auth)
+│   ├── keystore.py                   # 🔑 Secure key storage (OS credential vault)
+│   ├── asset_verify_node.py          # 🛡️ Single-Object Guardrail (VLM + auto-retry)
+│   ├── environment_export_node.py    # 🌍 Terrain/Skydome/Texture export
 │   ├── unified_3d_node.py            # 🧊 Unified 3D Generator
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
@@ -90,12 +93,12 @@ ComfyUI-Geekatplay-GameAssetMake/
 │           └── comfy_importer.py
 ├── unity_plugin/
 │   └── ComfyUnityImporter.cs         # Unity Editor bridge script
-└── workflows/                        # Ready-to-load example workflows
-    ├── gameassetmake_unreal_tripo.json
-    ├── gameassetmake_unreal_meshy.json
-    ├── gameassetmake_unreal_hitem3d.json
-    ├── gameassetmake_unity_tripo.json
-    └── gameassetmake_unity_meshy.json
+└── workflows/                        # Ready-to-load workflows
+    ├── gameassetmake_unreal.json     # Universal 3D asset pipeline → UE5
+    ├── gameassetmake_unity.json      # Universal 3D asset pipeline → Unity
+    ├── gameassetmake_terrain.json    # Terrain heightmap from description
+    ├── gameassetmake_skydome.json    # 360° skydome HDRI
+    └── gameassetmake_textures.json   # Seamless PBR materials
 ```
 
 ---
@@ -163,17 +166,19 @@ $env:MESHY_API_KEY = "your_meshy_key"
 
 The fastest way to try the pipeline: load one of the ready-made workflows from the [`workflows/`](workflows/) folder (**Workflow → Open** or drag the `.json` onto the canvas):
 
-| Workflow | Engine | 3D Provider |
+| Workflow | What it makes | Engine |
 |---|---|---|
-| `gameassetmake_unreal_tripo.json` | Unreal Engine 5 | Tripo3D |
-| `gameassetmake_unreal_meshy.json` | Unreal Engine 5 | Meshy |
-| `gameassetmake_unreal_hitem3d.json` | Unreal Engine 5 | Hitem3D *(experimental)* |
-| `gameassetmake_unity_tripo.json` | Unity | Tripo3D |
-| `gameassetmake_unity_meshy.json` | Unity | Meshy |
+| `gameassetmake_unreal.json` | **Universal 3D asset pipeline** (pick Tripo3D / Meshy / HiTem3D on the 3D Generator) | Unreal Engine 5 |
+| `gameassetmake_unity.json` | Same universal pipeline | Unity |
+| `gameassetmake_terrain.json` | Terrain heightmap from description (16-bit PNG) | Unreal Engine 5 |
+| `gameassetmake_skydome.json` | 360° skydome HDRI (.exr, seam-healed) | Unreal Engine 5 |
+| `gameassetmake_textures.json` | Seamless PBR material set (albedo/normal/roughness/metallic) | Unreal Engine 5 |
 
-All five are preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white. It loads via three nodes (`UNETLoader` + `CLIPLoader` + `VAELoader`) rather than one checkpoint.
+Together: **full game assets from a single prompt** — 3D models, terrain, sky, and materials. All preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white.
 
-Then just: add your API key on the 3D Generator and queue. See [workflows/README.md](workflows/README.md) for the exact model files and how to swap in a different checkpoint.
+The universal workflows include the **🛡️ Single-Object Guardrail**: every concept image is verified (local heuristic + optional Ollama VLM) to contain exactly one object on white — one human/animal for rigged characters — and failures are regenerated automatically before you ever see them.
+
+**API keys are entered once and stored in the OS credential vault** (Windows Credential Manager / macOS Keychain) — never in workflow JSON, so sharing a workflow never leaks a key. HiTem3D uses two keys entered as `AccessKey:SecretKey`. The terrain/skydome/texture workflows use nodes from the companion [ComfyUI-Blender-Toolbox](https://github.com/GeekatplayStudio/ComfyUI_Blender_toolbox) pack (same author) — install both. See [workflows/README.md](workflows/README.md) for details.
 
 ---
 

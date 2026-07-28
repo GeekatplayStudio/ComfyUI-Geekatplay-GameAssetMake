@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .claude/
 .DS_Store
+# Local API keys — never commit
+config/
+api_keys.local.json

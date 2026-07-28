@@ -8,6 +8,8 @@ from .unified_3d_node import Unified3DGeneratorNode
 from .unreal_bridge_node import UnrealEngineBridgeNode
 from .unity_bridge_node import UnityEngineBridgeNode
 from .engine_check_node import EngineConnectionCheckNode
+from .asset_verify_node import SingleObjectGuardrailNode
+from .environment_export_node import EnvironmentAssetExportNode
 
 NODE_CLASS_MAPPINGS = {
     "GameAssetPlannerNode": GameAssetPlannerNode,
@@ -15,7 +17,9 @@ NODE_CLASS_MAPPINGS = {
     "Unified3DGeneratorNode": Unified3DGeneratorNode,
     "UnrealEngineBridgeNode": UnrealEngineBridgeNode,
     "UnityEngineBridgeNode": UnityEngineBridgeNode,
-    "EngineConnectionCheckNode": EngineConnectionCheckNode
+    "EngineConnectionCheckNode": EngineConnectionCheckNode,
+    "SingleObjectGuardrailNode": SingleObjectGuardrailNode,
+    "EnvironmentAssetExportNode": EnvironmentAssetExportNode
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -24,5 +28,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Unified3DGeneratorNode": "🧊 GameAssetMake 3D Generator (Tripo / Meshy / Hitem3D)",
     "UnrealEngineBridgeNode": "⚡ GameAssetMake Unreal Engine Bridge",
     "UnityEngineBridgeNode": "📦 GameAssetMake Unity Engine Bridge",
-    "EngineConnectionCheckNode": "🔌 GameAssetMake Engine Connection Check"
+    "EngineConnectionCheckNode": "🔌 GameAssetMake Engine Connection Check",
+    "SingleObjectGuardrailNode": "🛡️ GameAssetMake Single-Object Guardrail (VLM)",
+    "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)"
 }

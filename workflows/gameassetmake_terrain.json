@@ -1,6 +1,6 @@
 {
-  "last_node_id": 13,
-  "last_link_id": 13,
+  "last_node_id": 15,
+  "last_link_id": 14,
   "nodes": [
     {
       "id": 1,
@@ -48,7 +48,7 @@
         110
       ],
       "flags": {},
-      "order": 1,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -84,7 +84,7 @@
         60
       ],
       "flags": {},
-      "order": 2,
+      "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -92,7 +92,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            9
+            10
           ],
           "slot_index": 0
         }
@@ -107,63 +107,57 @@
     },
     {
       "id": 2,
-      "type": "GameAssetPlannerNode",
+      "type": "FluxTerrainPromptGenerator",
       "pos": [
         40,
         470
       ],
       "size": [
         380,
-        260
+        240
       ],
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "inputs": [
         {
-          "name": "llm_breakdown_json",
+          "name": "description",
           "type": "STRING",
           "link": null,
           "widget": {
-            "name": "llm_breakdown_json"
+            "name": "description"
           }
         }
       ],
       "outputs": [
         {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "links": [
-            11
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "prompt_list_json",
+          "name": "positive_prompt",
           "type": "STRING",
           "links": [
             4
           ],
-          "slot_index": 1
+          "slot_index": 0
         },
         {
-          "name": "count",
-          "type": "INT",
-          "links": null,
-          "slot_index": 2
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "slot_index": 1
         }
       ],
       "properties": {
-        "Node name for S&R": "GameAssetPlannerNode"
+        "Node name for S&R": "FluxTerrainPromptGenerator"
       },
       "widgets_values": [
-        "3d dungeon crawler, with one hero and spiders, dark fantasy style, stone dungeon environment",
-        12,
-        "Stylized Low Poly",
-        0,
-        "fixed",
-        ""
-      ]
+        "vast mountain range with a central valley and a winding river",
+        "Hydraulic (Water flow)",
+        1.0,
+        "None",
+        "Grayscale (Heightmap)"
+      ],
+      "title": "Terrain Prompt (from description) \u2014 Blender-Toolbox"
     },
     {
       "id": 3,
@@ -174,10 +168,10 @@
       ],
       "size": [
         300,
-        120
+        110
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [
         {
@@ -199,7 +193,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            5
+            6
           ],
           "slot_index": 0
         }
@@ -210,27 +204,35 @@
       "widgets_values": [
         ""
       ],
-      "title": "Positive (from Asset Planner)"
+      "title": "Positive (terrain heightmap)"
     },
     {
       "id": 4,
       "type": "CLIPTextEncode",
       "pos": [
         480,
-        380
+        360
       ],
       "size": [
         300,
-        120
+        110
       ],
       "flags": {},
-      "order": 5,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
           "link": 3
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 5,
+          "widget": {
+            "name": "text"
+          }
         }
       ],
       "outputs": [
@@ -238,7 +240,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            6
+            7
           ],
           "slot_index": 0
         }
@@ -247,23 +249,23 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "blurry, low quality, watermark, text, cropped, multiple objects"
+        ""
       ],
-      "title": "Negative (only active if cfg > 1.0)"
+      "title": "Negative"
     },
     {
       "id": 5,
       "type": "EmptySD3LatentImage",
       "pos": [
         480,
-        560
+        520
       ],
       "size": [
         300,
         110
       ],
       "flags": {},
-      "order": 6,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -271,7 +273,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            7
+            8
           ],
           "slot_index": 0
         }
@@ -282,9 +284,9 @@
       "widgets_values": [
         1024,
         1024,
-        12
+        1
       ],
-      "title": "Batch Latents (16ch \u2014 match asset count)"
+      "title": "Heightmap Latent (16ch)"
     },
     {
       "id": 6,
@@ -298,7 +300,7 @@
         260
       ],
       "flags": {},
-      "order": 7,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -309,17 +311,17 @@
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 5
+          "link": 6
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 6
+          "link": 7
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 7
+          "link": 8
         }
       ],
       "outputs": [
@@ -327,7 +329,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            8
+            9
           ],
           "slot_index": 0
         }
@@ -343,8 +345,7 @@
         "euler",
         "simple",
         1.0
-      ],
-      "title": "KSampler (Turbo: 8 steps, cfg 1.0)"
+      ]
     },
     {
       "id": 7,
@@ -358,18 +359,18 @@
         60
       ],
       "flags": {},
-      "order": 8,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 8
+          "link": 9
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 9
+          "link": 10
         }
       ],
       "outputs": [
@@ -377,7 +378,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            10
+            11
           ],
           "slot_index": 0
         }
@@ -388,80 +389,94 @@
       "widgets_values": []
     },
     {
-      "id": 8,
-      "type": "GalleryApprovalNode",
+      "id": 14,
+      "type": "SimpleHeightmapNormalizer",
       "pos": [
-        1200,
+        1120,
         200
       ],
       "size": [
-        420,
-        520
+        280,
+        80
       ],
       "flags": {},
-      "order": 9,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 10
-        },
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
           "link": 11
         }
       ],
       "outputs": [
         {
-          "name": "approved_assets_json",
-          "type": "STRING",
+          "name": "IMAGE",
+          "type": "IMAGE",
           "links": [
-            12
+            12,
+            13
           ],
           "slot_index": 0
-        },
-        {
-          "name": "image_paths_json",
-          "type": "STRING",
-          "links": null,
-          "slot_index": 1
-        },
-        {
-          "name": "approved_count",
-          "type": "INT",
-          "links": null,
-          "slot_index": 2
         }
       ],
       "properties": {
-        "Node name for S&R": "GalleryApprovalNode"
+        "Node name for S&R": "SimpleHeightmapNormalizer"
       },
-      "widgets_values": [
-        "Approve All (Auto)",
-        ""
-      ]
+      "widgets_values": [],
+      "title": "Normalize Heightmap \u2014 Blender-Toolbox"
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        1120,
+        340
+      ],
+      "size": [
+        280,
+        260
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
     },
     {
       "id": 9,
-      "type": "Unified3DGeneratorNode",
+      "type": "EnvironmentAssetExportNode",
       "pos": [
-        1680,
+        1460,
         200
       ],
       "size": [
         380,
-        320
+        260
       ],
       "flags": {},
-      "order": 10,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
-          "name": "approved_assets_json",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 13
+        },
+        {
+          "name": "file_path",
           "type": "STRING",
-          "link": 12
+          "link": null
         }
       ],
       "outputs": [
@@ -469,88 +484,96 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            13
+            14
           ],
           "slot_index": 0
         },
         {
-          "name": "asset_count",
-          "type": "INT",
-          "links": null,
+          "name": "file_path",
+          "type": "STRING",
+          "links": [],
           "slot_index": 1
         }
       ],
       "properties": {
-        "Node name for S&R": "Unified3DGeneratorNode"
+        "Node name for S&R": "EnvironmentAssetExportNode"
       },
       "widgets_values": [
-        "",
-        "",
-        "",
-        "tripo",
-        "FBX",
-        "quad",
-        15000,
-        true
+        "terrain_heightmap",
+        "Terrain_01",
+        1000.0,
+        200.0
       ],
-      "title": "3D Generator \u2014 Unity + Tripo3D"
+      "title": "\ud83c\udf0d Export 16-bit Heightmap for Engine"
     },
     {
       "id": 10,
-      "type": "UnityEngineBridgeNode",
+      "type": "UnrealEngineBridgeNode",
       "pos": [
-        2120,
+        1900,
         200
       ],
       "size": [
         400,
-        220
+        320
       ],
       "flags": {},
-      "order": 11,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "completed_3d_manifest_json",
           "type": "STRING",
-          "link": 13
+          "link": 14
+        },
+        {
+          "name": "unreal_project_content_dir",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "unreal_project_content_dir"
+          }
         }
       ],
       "outputs": [
         {
-          "name": "unity_import_payload_json",
+          "name": "unreal_import_payload_json",
           "type": "STRING",
-          "links": null,
+          "links": [],
           "slot_index": 0
         },
         {
           "name": "imported_count",
           "type": "INT",
-          "links": null,
+          "links": [],
           "slot_index": 1
         },
         {
           "name": "success",
           "type": "BOOLEAN",
-          "links": null,
+          "links": [],
           "slot_index": 2
         }
       ],
       "properties": {
-        "Node name for S&R": "UnityEngineBridgeNode"
+        "Node name for S&R": "UnrealEngineBridgeNode"
       },
       "widgets_values": [
         "127.0.0.1",
-        8080,
-        "Assets/AI_Generated/",
-        true
+        30010,
+        "HTTP Bridge Plugin (Port 30010)",
+        "/Game/Assets/AI_Generated/",
+        100.0,
+        true,
+        true,
+        ""
       ]
     },
     {
       "id": 11,
       "type": "EngineConnectionCheckNode",
       "pos": [
-        2120,
+        1900,
         620
       ],
       "size": [
@@ -558,20 +581,20 @@
         160
       ],
       "flags": {},
-      "order": 12,
+      "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "engine_online",
           "type": "BOOLEAN",
-          "links": null,
+          "links": [],
           "slot_index": 0
         },
         {
           "name": "status_message",
           "type": "STRING",
-          "links": null,
+          "links": [],
           "slot_index": 1
         }
       ],
@@ -579,11 +602,11 @@
         "Node name for S&R": "EngineConnectionCheckNode"
       },
       "widgets_values": [
-        "unity",
+        "unreal",
         "127.0.0.1",
-        8080
+        30010
       ],
-      "title": "Verify Unity Bridge Is Running"
+      "title": "Verify Unreal Bridge Is Running"
     }
   ],
   "links": [
@@ -614,13 +637,21 @@
     [
       4,
       2,
-      1,
+      0,
       3,
       1,
       "STRING"
     ],
     [
       5,
+      2,
+      1,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      6,
       3,
       0,
       6,
@@ -628,7 +659,7 @@
       "CONDITIONING"
     ],
     [
-      6,
+      7,
       4,
       0,
       6,
@@ -636,7 +667,7 @@
       "CONDITIONING"
     ],
     [
-      7,
+      8,
       5,
       0,
       6,
@@ -644,7 +675,7 @@
       "LATENT"
     ],
     [
-      8,
+      9,
       6,
       0,
       7,
@@ -652,7 +683,7 @@
       "LATENT"
     ],
     [
-      9,
+      10,
       13,
       0,
       7,
@@ -660,31 +691,31 @@
       "VAE"
     ],
     [
-      10,
+      11,
       7,
       0,
-      8,
+      14,
       0,
       "IMAGE"
     ],
     [
-      11,
-      2,
-      0,
-      8,
-      1,
-      "STRING"
-    ],
-    [
       12,
-      8,
+      14,
       0,
-      9,
+      15,
       0,
-      "STRING"
+      "IMAGE"
     ],
     [
       13,
+      14,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
       9,
       0,
       10,
@@ -696,7 +727,7 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Unity + Tripo3D",
+      "name": "Geekatplay GameAssetMake \u2014 Terrain Heightmap from Description",
       "author": "Geekatplay Studio \u2014 Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }

@@ -1,37 +1,44 @@
-# 📂 Example Workflows — Geekatplay GameAssetMake
+# 📂 Workflows — Geekatplay GameAssetMake
 
 Ready-to-load ComfyUI workflows by **Geekatplay Studio — Vladimir Chopine**.
-Load any of these via **Workflow → Open** (or drag-and-drop the `.json` onto the ComfyUI canvas).
+Load via **Workflow → Open** or drag the `.json` onto the canvas.
 
-| Workflow | Target Engine | 3D Provider |
+**Full game assets from a single prompt** — models, terrain, skydome, and materials:
+
+| Workflow | What it makes | Engine delivery |
 |---|---|---|
-| `gameassetmake_unreal_tripo.json` | Unreal Engine 5 | Tripo3D |
-| `gameassetmake_unreal_meshy.json` | Unreal Engine 5 | Meshy |
-| `gameassetmake_unreal_hitem3d.json` | Unreal Engine 5 | Hitem3D *(experimental)* |
-| `gameassetmake_unity_tripo.json` | Unity | Tripo3D |
-| `gameassetmake_unity_meshy.json` | Unity | Meshy |
+| `gameassetmake_unreal.json` | **Universal 3D asset pipeline** — planner → concepts → guardrail → gallery → 3D models | Unreal Engine 5 (:30010) |
+| `gameassetmake_unity.json` | Same universal pipeline | Unity (:8080) |
+| `gameassetmake_terrain.json` | **Terrain heightmap** from a text description (16-bit PNG for Landscape/Terrain import) | Unreal Engine 5 |
+| `gameassetmake_skydome.json` | **360° skydome HDRI** (.exr, seam-healed equirectangular panorama) | Unreal Engine 5 |
+| `gameassetmake_textures.json` | **Seamless PBR material** (albedo + normal + roughness + metallic) | Unreal Engine 5 |
 
-Each workflow contains the full pipeline:
+The 3D provider (**Tripo3D / Meshy / HiTem3D**) is one global `engine` choice on the 3D Generator node — no more per-provider workflow duplicates. Unity delivery for terrain/skydome/textures: swap the bridge node for the Unity one.
 
-**🎮 Asset Planner → Z-Image Turbo concept generation → 🖼️ Gallery Approval → 🧊 3D Generator → 🔌 Connection Check → ⚡/📦 Engine Bridge**
+## 🔑 API keys — enter once, stored securely
 
-Every workflow also includes a **🔌 Engine Connection Check** node that verifies your Unreal/Unity editor bridge is installed and reachable each time you queue — it shows a green **ONLINE** / red **OFFLINE** badge right on the node.
+Keys are **never saved in workflow JSON** — share workflows freely, they leak nothing.
+Type a key into the 3D Generator once with `remember_keys` ON and it's stored in the **OS credential vault** (Windows Credential Manager / macOS Keychain). After that the fields stay empty and keys load automatically. Keys saved by the ComfyUI-Blender-Toolbox Credential Manager are also picked up.
 
-## Before running
+- **Tripo3D / Meshy**: single API key
+- **HiTem3D**: two keys, entered as one value: `AccessKey:SecretKey` (e.g. `ak_xxx:sk_xxx`)
 
-1. **Model files** — these workflows use **Z-Image Turbo**, which is a bare diffusion model, so it loads through **three** nodes instead of one checkpoint loader:
+## 🛡️ Single-object guardrail (in the universal workflows)
 
-   | Node | File |
-   |---|---|
-   | `UNETLoader` | `z_image_turbo_bf16.safetensors` |
-   | `CLIPLoader` (type `lumina2`) | `qwen_3_4b.safetensors` |
-   | `VAELoader` | `ae.safetensors` |
+Between concept generation and the approval gallery, the **Single-Object Guardrail** node verifies every image is **one object, isolated on white** (and for rigged characters: exactly one human/animal):
 
-   Sampling is preset to **8 steps @ cfg 1.0**, `euler`/`simple` — Turbo needs no more. The latent node is `EmptySD3LatentImage` (16-channel); a plain `EmptyLatentImage` is 4-channel and is wrong for this model family.
+- **heuristic** — local blob analysis of the white background (free, instant)
+- **vlm** — cross-check by a local [Ollama](https://ollama.com) vision model (default `gemma3` at `http://127.0.0.1:11434`; if Ollama isn't running, the heuristic alone decides)
+- Failed images are **automatically regenerated** with a stricter prompt (up to `max_retries`), because a concept with two objects or a busy background ruins the 3D mesh.
 
-   *Why Z-Image Turbo?* Benchmarked on an RTX 3090 against the alternatives at 1024×1024: it was **~7.5 s/image vs ~27 s for `flux1-dev-fp8`**, and it was the only model that reliably honored "single object, 3/4 view, isolated on pure white". SDXL matched it on speed but added extra props to the scene and used a grey backdrop; Flux was soft/blurry and needs an extra `FluxGuidance` node. To swap models, replace the three loaders with a `CheckpointLoaderSimple` and raise `cfg`/`steps` to suit.
-2. **Batch size** — the `EmptyLatentImage` batch (default 12) should match the Planner's `target_asset_count` so every asset gets its own concept image.
-3. **API key** — enter your Tripo3D / Meshy / Hitem3D key on the 3D Generator node (or set the `TRIPO_API_KEY` / `MESHY_API_KEY` / `HITEM3D_API_KEY` environment variables). `dry_run_mock` is **ON** by default — flip it off to spend credits.
-4. **Engine bridge** — have the ComfyUnrealBridge plugin (port `30010`) or the Unity `ComfyUnityImporter.cs` script (port `8080`) running in your engine editor. The Connection Check node (and the bridge nodes themselves) will tell you if it isn't.
+## ⚙️ Before running
 
-The 3D provider is a **global choice** set with the 3D Generator's `engine` widget (preset per workflow). Concept images are generated **one object per image, 3/4 view to the camera, isolated on white** — the framing 3D generation APIs work best with. After generation, the 3D Generator node displays a results panel listing **every model returned from the API** with its status and local file path.
+1. **Models** — Z-Image Turbo (benchmarked best for isolated game-asset concepts, ~7.5 s/image on an RTX 3090): `UNETLoader` → `z_image_turbo_bf16.safetensors`, `CLIPLoader` (type `lumina2`) → `qwen_3_4b.safetensors`, `VAELoader` → `ae.safetensors`. Sampling preset: 8 steps @ cfg 1.0, 16-channel `EmptySD3LatentImage`.
+2. **Companion pack** — terrain, skydome, and texture workflows use nodes from [ComfyUI-Blender-Toolbox](https://github.com/GeekatplayStudio/ComfyUI_Blender_toolbox) (same author) — install it alongside this pack.
+3. **Batch size** — in the universal workflows, the latent batch (12) should match the planner's `target_asset_count`.
+4. **Engine bridge** — ComfyUnrealBridge plugin (:30010) or ComfyUnityImporter.cs (:8080) running; the 🔌 Connection Check node shows ONLINE/OFFLINE.
+5. **dry_run_mock** is ON by default on the 3D Generator — flip it off to spend API credits.
+
+## 🌍 Environment assets in the engine
+
+Terrain heightmaps arrive in Unreal under `/Game/Assets/AI_Generated/Environment` as textures; the source 16-bit PNG path is printed in the Output Log for **Mode → Landscape → Import from File**. Skydome EXRs import as textures ready for a sky material; PBR material sets are saved to `output/PBR_Materials/`.
