@@ -1,6 +1,6 @@
 {
-  "last_node_id": 55,
-  "last_link_id": 10,
+  "last_node_id": 60,
+  "last_link_id": 11,
   "nodes": [
     {
       "id": 1,
@@ -451,7 +451,7 @@
         {
           "name": "environment_json",
           "type": "STRING",
-          "link": null
+          "link": 11
         }
       ],
       "outputs": [
@@ -483,6 +483,51 @@
         "Assets/AI_Generated/",
         true
       ]
+    },
+    {
+      "id": 60,
+      "type": "SunEnvironmentNode",
+      "pos": [
+        2460,
+        820
+      ],
+      "size": [
+        400,
+        210
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "environment_json",
+          "type": "STRING",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "sun_summary",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SunEnvironmentNode"
+      },
+      "widgets_values": [
+        "summer",
+        "afternoon",
+        "from season + time",
+        200.0,
+        35.0,
+        10.0,
+        "#FFF4E0"
+      ],
+      "title": "SUN - sets the DirectionalLight in the engine"
     },
     {
       "id": 11,
@@ -603,6 +648,14 @@
       0,
       10,
       0,
+      "STRING"
+    ],
+    [
+      11,
+      60,
+      0,
+      10,
+      1,
       "STRING"
     ]
   ],

@@ -26,6 +26,14 @@ Type *"medieval village in a green valley"* into the **Scene Director** node and
 
 The gallery is the human-in-the-loop stop: nothing is spent on 3D generation until you approve. Re-queue with a different seed to redo any branch.
 
+### ☀️ Lighting in every workflow
+
+Every workflow that delivers to an engine includes a light source, because assets imported into a level with no light render black:
+
+- The **☀️ Sun / Environment** node (season + time of day, or manual azimuth/elevation) feeds `environment_json` to the bridge, which configures a **DirectionalLight** in Unreal or Unity.
+- Skydome workflows additionally build the sky itself: an **unlit emissive sky sphere** plus a **SkyLight** capturing it in Unreal (so the HDRI provides image-based ambient light), or `RenderSettings.skybox` in Unity.
+- The full-scene workflow gets its sun from the **Scene Director** instead, so the light matches the season and hour in your prompt.
+
 ### 🎚️ Import-only vs. import + scene setup
 
 Every exporter — Unreal **and** Unity — has one master toggle:
