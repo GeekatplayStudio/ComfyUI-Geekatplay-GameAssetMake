@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
+from .engine_check_node import ping_engine_bridge
 
 class UnityEngineBridgeNode:
     """
@@ -48,6 +49,12 @@ class UnityEngineBridgeNode:
 
         payload_str = json.dumps(payload, indent=2)
         success = False
+
+        # Verify the Unity bridge is actually running before sending
+        online, ping_msg = ping_engine_bridge(unity_host, unity_port, engine="unity")
+        print(f"[Unity Bridge Check] {ping_msg}")
+        if not online:
+            return (payload_str, len(manifest), False)
 
         # Trailing slash required: Unity's HttpListener prefix is registered as /import_assets/
         url = f"http://{unity_host}:{unity_port}/import_assets/"

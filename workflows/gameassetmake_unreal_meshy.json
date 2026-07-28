@@ -1,5 +1,5 @@
 {
-  "last_node_id": 10,
+  "last_node_id": 11,
   "last_link_id": 13,
   "nodes": [
     {
@@ -48,8 +48,9 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "sd_xl_base_1.0.safetensors"
-      ]
+        "flux1-dev-fp8.safetensors"
+      ],
+      "title": "Checkpoint (Flux fp8 recommended; SDXL/Z-Image also work)"
     },
     {
       "id": 2,
@@ -105,7 +106,7 @@
       "widgets_values": [
         "3d dungeon crawler, with one hero and spiders, dark fantasy style, stone dungeon environment",
         12,
-        "Dark Fantasy",
+        "Stylized Low Poly",
         0,
         "fixed",
         ""
@@ -284,10 +285,10 @@
       "widgets_values": [
         0,
         "randomize",
-        25,
-        7.0,
+        20,
+        1.0,
         "euler",
-        "normal",
+        "simple",
         1.0
       ]
     },
@@ -502,6 +503,45 @@
         true,
         ""
       ]
+    },
+    {
+      "id": 11,
+      "type": "EngineConnectionCheckNode",
+      "pos": [
+        2120,
+        620
+      ],
+      "size": [
+        400,
+        160
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "engine_online",
+          "type": "BOOLEAN",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "status_message",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EngineConnectionCheckNode"
+      },
+      "widgets_values": [
+        "unreal",
+        "127.0.0.1",
+        30010
+      ],
+      "title": "Verify Unreal Bridge Is Running"
     }
   ],
   "links": [

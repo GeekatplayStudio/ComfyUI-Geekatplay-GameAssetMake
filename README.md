@@ -26,7 +26,9 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 - 🧠 **Natural-Language Asset Planner** — one prompt becomes a full manifest of game-ready assets with names, categories, scale, collision shape, and world placement.
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
-- 🧊 **Multiple Cloud 3D Backends** — generate meshes with **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **Hitem3D** *(experimental)* — mix and match per asset, or force one provider with the `engine_override` option.
+- 🧊 **Multiple Cloud 3D Backends** — generate meshes with **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **Hitem3D** *(experimental)* — chosen globally on the 3D Generator node. A built-in results panel lists every model returned from the API with status and file path.
+- 🎨 **30+ Art Styles** — from Low Poly, Voxel, and PS1 Retro through Realistic PBR, Dark Fantasy, Cyberpunk, Toon/Cel Shaded, Chibi, Claymation, and more. Concepts are generated one object per image, 3/4 view to the camera, isolated on white — the framing image-to-3D APIs handle best.
+- 🔌 **Engine Connection Check** — a dedicated node (plus automatic pre-send verification in both bridges) confirms your Unreal/Unity editor bridge is installed, running, and reachable before you spend API credits.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
 - 📦 **Unity Editor Bridge** — a single-file Unity Editor script listening on port `8080` that imports models into `Assets/AI_Generated/` and instantiates them into the open scene, with automatic Unreal→Unity unit/axis conversion.
 - 🧪 **Dry-Run Mock Mode** — test the entire pipeline end-to-end with zero API credits spent before going live.
@@ -70,7 +72,8 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── hitem3d_api.py                # Hitem3D API client (experimental)
 │   ├── unified_3d_node.py            # 🧊 Unified 3D Generator
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
-│   └── unity_bridge_node.py          # 📦 Unity Engine Bridge
+│   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
+│   └── engine_check_node.py          # 🔌 Engine Connection Check
 ├── web/
 │   ├── js/gallery_widget.js          # Interactive gallery front-end
 │   └── css/gallery.css               # Dark-mode styling
@@ -172,7 +175,7 @@ Then just: pick your SDXL checkpoint on the loader node, add your API key on the
 
 1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick an `art_style`, and set `target_asset_count`. It outputs `asset_manifest_json` and `prompt_list_json`.
 2. **Generate 2D concepts** — feed `prompt_list_json` into any ComfyUI text-to-image sampler (SDXL, FLUX, SD3, etc.) as a batch, producing one concept image per asset.
-3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, choose **Tripo3D** vs **Meshy**, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**.
+3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**. (The 3D provider — Tripo3D / Meshy / Hitem3D — is set globally on the 3D Generator node, not per asset.)
 4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**. It submits cloud tasks, polls for completion, and downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`.
 5. **Deliver to your engine** — connect `completed_3d_manifest_json` to:
    - **⚡ Unreal Engine Bridge** (talks to `unreal_host:unreal_port`, default `127.0.0.1:30010`), and/or

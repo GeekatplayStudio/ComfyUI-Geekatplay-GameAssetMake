@@ -3,6 +3,7 @@ import json
 import socket
 import urllib.request
 import urllib.error
+from .engine_check_node import ping_engine_bridge
 
 class UnrealEngineBridgeNode:
     """
@@ -78,6 +79,12 @@ class UnrealEngineBridgeNode:
         success = False
 
         if communication_mode == "HTTP Bridge Plugin (Port 30010)":
+            # Verify the Unreal bridge is actually running before sending
+            online, ping_msg = ping_engine_bridge(unreal_host, unreal_port, engine="unreal")
+            print(f"[Unreal Bridge Check] {ping_msg}")
+            if not online:
+                return (payload_str, len(import_payload["assets"]), False)
+
             # POST the full import payload to the ComfyUnrealBridge plugin listener
             url = f"http://{unreal_host}:{unreal_port}/import_assets"
             try:

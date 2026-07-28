@@ -30,7 +30,7 @@ class Unified3DGeneratorNode:
                 "tripo_api_key": ("STRING", {"default": "", "multiline": False}),
                 "meshy_api_key": ("STRING", {"default": "", "multiline": False}),
                 "hitem3d_api_key": ("STRING", {"default": "", "multiline": False}),
-                "engine_override": (["use manifest (per-asset)", "tripo", "meshy", "hitem3d"], {"default": "use manifest (per-asset)"}),
+                "engine": (["tripo", "meshy", "hitem3d"], {"default": "tripo"}),
                 "output_format": (["FBX", "GLB", "OBJ"], {"default": "FBX"}),
                 "default_topology": (["quad", "triangle"], {"default": "quad"}),
                 "target_face_count": ("INT", {"default": 15000, "min": 1000, "max": 100000, "step": 1000}),
@@ -44,7 +44,7 @@ class Unified3DGeneratorNode:
     CATEGORY = "Geekatplay GameAssetMake/3D-Generator"
     OUTPUT_NODE = True
 
-    def generate_3d_assets(self, approved_assets_json, tripo_api_key="", meshy_api_key="", hitem3d_api_key="", engine_override="use manifest (per-asset)", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True):
+    def generate_3d_assets(self, approved_assets_json, tripo_api_key="", meshy_api_key="", hitem3d_api_key="", engine="tripo", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True):
         try:
             assets = json.loads(approved_assets_json)
         except Exception:
@@ -63,9 +63,7 @@ class Unified3DGeneratorNode:
             asset_id = item.get("id", f"asset_{idx:02d}")
             asset_name = item.get("name", f"GameAsset_{idx}")
             img_path = item.get("image_path", "")
-            engine = item.get("engine_target", "tripo").lower()
-            if engine_override != "use manifest (per-asset)":
-                engine = engine_override
+            # Engine is a global choice on this node; per-asset engine_target in the manifest is ignored
             inc_texture = item.get("include_texture", True)
             inc_rigging = item.get("include_rigging", False)
             rig_type = item.get("rig_type", "biped")
@@ -160,10 +158,27 @@ class Unified3DGeneratorNode:
             completed_item = dict(item)
             completed_item["model_path"] = model_dest_path
             completed_item["model_format"] = output_format
+            completed_item["engine_used"] = engine
             completed_item["generation_status"] = status_msg
             completed_manifest.append(completed_item)
 
-        return (
-            json.dumps(completed_manifest, indent=2),
-            len(completed_manifest)
-        )
+        # Results list rendered by the node's web widget (all 3D models returned from the API)
+        model_results = [
+            {
+                "id": c.get("id"),
+                "name": c.get("name"),
+                "engine": engine,
+                "status": c.get("generation_status"),
+                "model_path": c.get("model_path"),
+                "format": c.get("model_format"),
+            }
+            for c in completed_manifest
+        ]
+
+        return {
+            "ui": {"generated_models": [model_results]},
+            "result": (
+                json.dumps(completed_manifest, indent=2),
+                len(completed_manifest)
+            ),
+        }

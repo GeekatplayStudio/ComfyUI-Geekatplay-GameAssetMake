@@ -15,11 +15,13 @@ Each workflow contains the full pipeline:
 
 **🎮 Asset Planner → SDXL concept generation → 🖼️ Gallery Approval → 🧊 3D Generator → ⚡/📦 Engine Bridge**
 
+Every workflow also includes a **🔌 Engine Connection Check** node that verifies your Unreal/Unity editor bridge is installed and reachable each time you queue — it shows a green **ONLINE** / red **OFFLINE** badge right on the node.
+
 ## Before running
 
-1. **Checkpoint** — the `CheckpointLoaderSimple` node defaults to `sd_xl_base_1.0.safetensors`; switch it to any SDXL/FLUX/SD3 checkpoint you have installed.
+1. **Checkpoint** — the loader defaults to `flux1-dev-fp8.safetensors` (**Flux is recommended over SDXL** for clean isolated-object concepts; Z-Image or any modern checkpoint also works — adjust `cfg`/`steps` to suit: Flux fp8 uses cfg `1.0`, SDXL-style models want cfg ~`7`).
 2. **Batch size** — the `EmptyLatentImage` batch (default 12) should match the Planner's `target_asset_count` so every asset gets its own concept image.
 3. **API key** — enter your Tripo3D / Meshy / Hitem3D key on the 3D Generator node (or set the `TRIPO_API_KEY` / `MESHY_API_KEY` / `HITEM3D_API_KEY` environment variables). `dry_run_mock` is **ON** by default — flip it off to spend credits.
-4. **Engine bridge** — have the ComfyUnrealBridge plugin (port `30010`) or the Unity `ComfyUnityImporter.cs` script (port `8080`) running in your engine editor.
+4. **Engine bridge** — have the ComfyUnrealBridge plugin (port `30010`) or the Unity `ComfyUnityImporter.cs` script (port `8080`) running in your engine editor. The Connection Check node (and the bridge nodes themselves) will tell you if it isn't.
 
-The 3D provider per workflow is preset with the 3D Generator's `engine_override` widget — set it back to *"use manifest (per-asset)"* to instead honor the per-asset choices you make in the approval gallery.
+The 3D provider is a **global choice** set with the 3D Generator's `engine` widget (preset per workflow). Concept images are generated **one object per image, 3/4 view to the camera, isolated on white** — the framing 3D generation APIs work best with. After generation, the 3D Generator node displays a results panel listing **every model returned from the API** with its status and local file path.

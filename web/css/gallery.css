@@ -175,6 +175,53 @@
     font-weight: 400;
 }
 
+.gameassetmake-status-dot {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    border-radius: 50%;
+    background: #666;
+}
+.gameassetmake-status-dot.ok { background: #28a745; }
+.gameassetmake-status-dot.fail { background: #dc3545; }
+
+.gameassetmake-model-status {
+    font-size: 11px;
+    font-weight: 600;
+}
+.gameassetmake-model-status.ok { color: #34ce57; }
+.gameassetmake-model-status.fail { color: #ff6b7a; }
+
+.gameassetmake-model-path {
+    width: 100%;
+    font-size: 10px;
+    color: #8a8a9e;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gameassetmake-conn-badge {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    background: #272730;
+    color: #b0b0c0;
+    border: 1px solid #3d3d4a;
+}
+.gameassetmake-conn-badge.online {
+    background: #16321c;
+    color: #34ce57;
+    border-color: #28a745;
+}
+.gameassetmake-conn-badge.offline {
+    background: #33181c;
+    color: #ff6b7a;
+    border-color: #dc3545;
+}
+
 .comfy-unreal-modal {
     position: fixed;
     top: 0;
