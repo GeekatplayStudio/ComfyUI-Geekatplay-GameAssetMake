@@ -37,6 +37,31 @@ def _find_static_mesh(folder, name_hint):
     return exact or partial
 
 
+def _find_texture(folder, name_hint):
+    """
+    Finds the Texture produced by an image import. The asset may be renamed or
+    suffixed by the importer, so try the direct path first, then scan the folder.
+    """
+    direct = f"{folder.rstrip('/')}/{name_hint}.{name_hint}"
+    if unreal.EditorAssetLibrary.does_asset_exist(direct):
+        loaded = unreal.EditorAssetLibrary.load_asset(direct)
+        if isinstance(loaded, unreal.Texture):
+            return loaded
+
+    hint = name_hint.lower()
+    fallback = None
+    for asset_path in unreal.EditorAssetLibrary.list_assets(folder, recursive=True):
+        base = asset_path.split("/")[-1].split(".")[0].lower()
+        loaded = unreal.EditorAssetLibrary.load_asset(asset_path)
+        if not isinstance(loaded, unreal.Texture):
+            continue
+        if base == hint:
+            return loaded
+        if hint in base or base in hint:
+            fallback = fallback or loaded
+    return fallback
+
+
 def _actor_bounds(actor):
     """(origin, box_extent) world-space; extent is HALF-size in cm."""
     origin, extent = actor.get_actor_bounds(False)
@@ -123,49 +148,132 @@ def _spawn_placed(editor_actor_subsystem, obj, asset, scale_factor, unit_scale=T
     return actor
 
 
-def _setup_skydome(editor_actor_subsystem, texture_asset, env_folder, name):
+def _setup_sky_light(editor_actor_subsystem, name):
     """
-    Builds an unlit emissive sky sphere from the imported HDRI texture:
-    material with a TextureSample -> emissive, two-sided, applied to a huge
-    engine sphere. Guarded — a failure logs but never aborts the batch.
+    Adds/updates a SkyLight that captures the sky sphere we just built, so the
+    HDRI actually LIGHTS the scene (image-based ambient), not merely look right.
     """
     try:
-        mat_name = f"M_{name}_Sky"
-        mat_path = f"{env_folder.rstrip('/')}/{mat_name}"
-        asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+        sky_light = None
+        for actor in editor_actor_subsystem.get_all_level_actors():
+            if isinstance(actor, unreal.SkyLight):
+                sky_light = actor
+                break
+        if sky_light is None:
+            sky_light = editor_actor_subsystem.spawn_actor_from_class(
+                unreal.SkyLight, unreal.Vector(0, 0, 300), unreal.Rotator(0, 0, 0))
+            unreal.log("[GameAssetMake] Spawned a SkyLight for image-based lighting.")
 
+        component = sky_light.light_component
+        component.set_editor_property("source_type",
+                                      unreal.SkyLightSourceType.SLS_CAPTURED_SCENE)
+        component.set_editor_property("real_time_capture", True)
+        component.set_editor_property("intensity", 1.0)
+        sky_light.set_actor_label(f"{name}_SkyLight")
+        try:
+            component.recapture_sky()
+        except Exception:
+            pass  # real-time capture handles it on newer engine versions
+        unreal.log("[GameAssetMake] SkyLight configured to capture the skydome "
+                   "(the HDRI now lights the scene).")
+        return True
+    except Exception as exc:
+        unreal.log_warning(f"[GameAssetMake] SkyLight setup failed ({exc}).")
+        return False
+
+
+def _setup_skydome(editor_actor_subsystem, texture_asset, env_folder, name):
+    """
+    Builds an unlit emissive sky sphere from the imported HDRI plus a SkyLight
+    that captures it. Every step logs, so a failure states exactly where it stopped.
+    """
+    mat_name = f"M_{name}_Sky"
+    mat_path = f"{env_folder.rstrip('/')}/{mat_name}"
+    material = None
+
+    # --- 1. sky material ---
+    try:
+        asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         if unreal.EditorAssetLibrary.does_asset_exist(mat_path):
             material = unreal.EditorAssetLibrary.load_asset(mat_path)
-        else:
+            unreal.log(f"[GameAssetMake] Reusing sky material {mat_path}")
+        if material is None:
             material = asset_tools.create_asset(mat_name, env_folder.rstrip('/'),
                                                 unreal.Material, unreal.MaterialFactoryNew())
-            mel = unreal.MaterialEditingLibrary
-            material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
-            material.set_editor_property("two_sided", True)
-            sample = mel.create_material_expression(
-                material, unreal.MaterialExpressionTextureSample, -400, 0)
-            sample.set_editor_property("texture", texture_asset)
-            mel.connect_material_property(sample, "RGB", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-            mel.recompile_material(material)
-            unreal.EditorAssetLibrary.save_asset(mat_path)
+        if material is None:
+            unreal.log_error(f"[GameAssetMake] Could not create sky material at {mat_path}")
+            return False
 
-        sphere = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Sphere.Sphere")
+        mel = unreal.MaterialEditingLibrary
+        material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+        material.set_editor_property("two_sided", True)
+        # Rebuild the texture node each run so a re-import refreshes the sky.
+        try:
+            mel.delete_all_material_expressions(material)
+        except Exception:
+            pass
+        sample = mel.create_material_expression(
+            material, unreal.MaterialExpressionTextureSample, -400, 0)
+        sample.set_editor_property("texture", texture_asset)
+        mel.connect_material_property(sample, "RGB", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+        mel.recompile_material(material)
+        unreal.EditorAssetLibrary.save_asset(mat_path)
+        unreal.log(f"[GameAssetMake] Sky material built: {mat_path}")
+    except Exception as exc:
+        unreal.log_error(f"[GameAssetMake] Sky material step failed: {exc}")
+        return False
+
+    # --- 2. sky sphere actor ---
+    try:
+        sphere = None
+        for candidate in ("/Engine/BasicShapes/Sphere.Sphere",
+                          "/Engine/EngineMeshes/Sphere.Sphere"):
+            if unreal.EditorAssetLibrary.does_asset_exist(candidate):
+                sphere = unreal.EditorAssetLibrary.load_asset(candidate)
+                if sphere:
+                    break
+        if sphere is None:
+            unreal.log_error("[GameAssetMake] Engine sphere mesh not found "
+                             "(/Engine/BasicShapes/Sphere). Enable 'Show Engine Content' "
+                             "in the Content Browser, or apply the sky material to your "
+                             "own large sphere manually.")
+            return False
+
+        # Replace a previous dome so repeated runs do not stack spheres.
+        label = f"{name}_SkyDome"
+        for actor in editor_actor_subsystem.get_all_level_actors():
+            try:
+                if actor.get_actor_label() == label:
+                    editor_actor_subsystem.destroy_actor(actor)
+            except Exception:
+                pass
+
         actor = editor_actor_subsystem.spawn_actor_from_object(
             sphere, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
-        if actor:
-            actor.set_actor_label(f"{name}_SkyDome")
-            # Engine sphere is 100uu across; scale to a 400m-radius dome,
-            # negative Z flips normals inward so the inside is visible.
-            actor.set_actor_scale_3d(unreal.Vector(800.0, 800.0, -800.0))
-            mesh_component = actor.static_mesh_component
-            mesh_component.set_material(0, material)
-            mesh_component.set_editor_property("cast_shadow", False)
-            unreal.log(f"[GameAssetMake] Skydome '{name}' created and applied.")
-            return True
+        if actor is None:
+            unreal.log_error("[GameAssetMake] Failed to spawn the sky sphere actor.")
+            return False
+
+        actor.set_actor_label(label)
+        # Engine sphere is 100uu across; negative scale flips the normals inward
+        # so the textured surface faces the camera from inside the dome.
+        actor.set_actor_scale_3d(unreal.Vector(800.0, 800.0, -800.0))
+        mesh_component = actor.static_mesh_component
+        mesh_component.set_material(0, material)
+        mesh_component.set_editor_property("cast_shadow", False)
+        try:
+            mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+        except Exception:
+            pass
+        unreal.log(f"[GameAssetMake] Skydome '{label}' created "
+                   f"(800x sphere, unlit emissive, inward-facing).")
     except Exception as exc:
-        unreal.log_warning(f"[GameAssetMake] Skydome auto-setup failed ({exc}). "
-                           f"The HDRI texture is imported — build the sky material manually.")
-    return False
+        unreal.log_error(f"[GameAssetMake] Sky sphere step failed: {exc}")
+        return False
+
+    # --- 3. image-based lighting ---
+    _setup_sky_light(editor_actor_subsystem, name)
+    return True
 
 
 def _hex_to_linear_color(hex_str):
@@ -280,9 +388,19 @@ def _process_one_asset(asset, asset_tools, editor_actor_subsystem,
     if is_image:
         _import_file(asset_tools, source_path, env_folder, asset_name)
         unreal.log(f"[GameAssetMake] Imported {category or 'texture'} '{asset_name}' -> {env_folder}")
-        if category == "skydome" and auto_place:
-            tex = unreal.EditorAssetLibrary.load_asset(f"{env_folder}/{asset_name}.{asset_name}")
-            if isinstance(tex, unreal.Texture):
+        if category in ("skydome", "skydome_hdri"):
+            if not auto_place:
+                unreal.log(f"[GameAssetMake] Skydome '{asset_name}' imported as an asset only "
+                           f"(scene setup toggle is off).")
+                return 1
+            tex = _find_texture(env_folder, asset_name)
+            if tex is None:
+                unreal.log_error(
+                    f"[GameAssetMake] Skydome texture '{asset_name}' was NOT found in "
+                    f"{env_folder} after import, so no sky was built. The source file was "
+                    f"{source_path}. Check the Content Browser for the imported texture.")
+            else:
+                unreal.log(f"[GameAssetMake] Building skydome from texture '{tex.get_name()}'...")
                 _setup_skydome(editor_actor_subsystem, tex, env_folder, asset_name)
         elif category == "terrain":
             unreal.log(f"[GameAssetMake] Heightmap imported. For a native Landscape use "

@@ -1,6 +1,6 @@
 {
-  "last_node_id": 55,
-  "last_link_id": 13,
+  "last_node_id": 60,
+  "last_link_id": 14,
   "nodes": [
     {
       "id": 1,
@@ -520,6 +520,51 @@
       "title": "PLACEMENT MANAGER"
     },
     {
+      "id": 60,
+      "type": "SunEnvironmentNode",
+      "pos": [
+        1940,
+        520
+      ],
+      "size": [
+        400,
+        210
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "environment_json",
+          "type": "STRING",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "sun_summary",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SunEnvironmentNode"
+      },
+      "widgets_values": [
+        "summer",
+        "sunset",
+        "from season + time",
+        200.0,
+        35.0,
+        10.0,
+        "#FFF4E0"
+      ],
+      "title": "SUN - drives the DirectionalLight in the engine"
+    },
+    {
       "id": 10,
       "type": "UnityEngineBridgeNode",
       "pos": [
@@ -538,6 +583,11 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "link": 13
+        },
+        {
+          "name": "environment_json",
+          "type": "STRING",
+          "link": 14
         }
       ],
       "outputs": [
@@ -713,6 +763,14 @@
       0,
       10,
       0,
+      "STRING"
+    ],
+    [
+      14,
+      60,
+      0,
+      10,
+      1,
       "STRING"
     ]
   ],

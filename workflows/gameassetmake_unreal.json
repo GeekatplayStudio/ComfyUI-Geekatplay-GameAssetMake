@@ -455,6 +455,11 @@
           "widget": {
             "name": "unreal_project_content_dir"
           }
+        },
+        {
+          "name": "environment_json",
+          "type": "STRING",
+          "link": null
         }
       ],
       "outputs": [

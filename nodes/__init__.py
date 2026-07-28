@@ -15,6 +15,7 @@ from .terrain_mesh_node import TerrainMeshBuilderNode
 from .scene_director_node import SceneDirectorNode
 from .layout_map_node import LayoutMapPreviewNode
 from .placement_manager_node import AssetPlacementManagerNode
+from .sun_environment_node import SunEnvironmentNode
 from .environment_export_node import EnvironmentAssetExportNode
 
 NODE_CLASS_MAPPINGS = {
@@ -31,6 +32,7 @@ NODE_CLASS_MAPPINGS = {
     "SceneDirectorNode": SceneDirectorNode,
     "LayoutMapPreviewNode": LayoutMapPreviewNode,
     "AssetPlacementManagerNode": AssetPlacementManagerNode,
+    "SunEnvironmentNode": SunEnvironmentNode,
     "EnvironmentAssetExportNode": EnvironmentAssetExportNode
 }
 
@@ -48,5 +50,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SceneDirectorNode": "🎬 GameAssetMake Scene Director (prompt → full scene plan)",
     "LayoutMapPreviewNode": "🗺️ GameAssetMake Layout Map (top-down placement preview)",
     "AssetPlacementManagerNode": "📐 GameAssetMake Placement Manager (order, scale, terrain snap)",
+    "SunEnvironmentNode": "☀️ GameAssetMake Sun / Environment (season + time → light)",
     "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)"
 }

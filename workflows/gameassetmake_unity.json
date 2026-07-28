@@ -447,6 +447,11 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "link": 10
+        },
+        {
+          "name": "environment_json",
+          "type": "STRING",
+          "link": null
         }
       ],
       "outputs": [
