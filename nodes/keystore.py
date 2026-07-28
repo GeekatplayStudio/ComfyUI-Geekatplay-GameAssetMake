@@ -22,6 +22,10 @@ FALLBACK_PATH = os.path.join(_ROOT, "config", "api_keys.local.json")  # gitignor
 PROVIDER_NAMES = {
     "tripo": ["Tripo", "TRIPO_API_KEY"],
     "meshy": ["Meshy", "MESHY_API_KEY"],
+    # HiTem3D issues an AK/SK pair (Client ID + Client Secret) — stored separately.
+    "hitem3d_access": ["HiTem3D Access Key", "HITEM3D_ACCESS_KEY"],
+    "hitem3d_secret": ["HiTem3D Secret Key", "HITEM3D_SECRET_KEY"],
+    # Legacy single-field entry: "AccessKey:SecretKey" (still read as a fallback)
     "hitem3d": ["HiTem3D", "Hitem3D", "HITEM3D_API_KEY"],
     "ollama": ["Ollama Cloud", "Ollama"],
 }
@@ -104,3 +108,33 @@ def resolve_key(provider, entered_value="", remember=False):
             save_key(provider, entered_value)
         return entered_value
     return get_key(provider)
+
+
+def resolve_hitem3d_keys(access_key="", secret_key="", remember=False):
+    """
+    HiTem3D uses a two-part credential (Access Key = Client ID,
+    Secret Key = Client Secret). Typed values win and are persisted when
+    remember=True; otherwise the stored pair is used. Falls back to a
+    legacy combined "AccessKey:SecretKey" entry if one exists.
+    Returns (access_key, secret_key).
+    """
+    access = str(access_key or "").strip()
+    secret = str(secret_key or "").strip()
+
+    if access and secret:
+        if remember:
+            save_key("hitem3d_access", access)
+            save_key("hitem3d_secret", secret)
+        return access, secret
+
+    stored_access = access or get_key("hitem3d_access")
+    stored_secret = secret or get_key("hitem3d_secret")
+
+    if not (stored_access and stored_secret):
+        legacy = get_key("hitem3d")
+        if legacy and ":" in legacy:
+            legacy_access, legacy_secret = legacy.split(":", 1)
+            stored_access = stored_access or legacy_access.strip()
+            stored_secret = stored_secret or legacy_secret.strip()
+
+    return stored_access, stored_secret

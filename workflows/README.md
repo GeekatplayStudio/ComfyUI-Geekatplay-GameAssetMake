@@ -20,8 +20,8 @@ The 3D provider (**Tripo3D / Meshy / HiTem3D**) is one global `engine` choice on
 Keys are **never saved in workflow JSON** — share workflows freely, they leak nothing.
 Type a key into the 3D Generator once with `remember_keys` ON and it's stored in the **OS credential vault** (Windows Credential Manager / macOS Keychain). After that the fields stay empty and keys load automatically. Keys saved by the ComfyUI-Blender-Toolbox Credential Manager are also picked up.
 
-- **Tripo3D / Meshy**: single API key
-- **HiTem3D**: two keys, entered as one value: `AccessKey:SecretKey` (e.g. `ak_xxx:sk_xxx`)
+- **Tripo3D / Meshy**: one field each — `tripo_api_key`, `meshy_api_key`
+- **HiTem3D**: **two separate fields** — `hitem3d_access_key` (`ak_...`) and `hitem3d_secret_key` (`sk_...`). Per the [HiTem3D docs](https://docs.hi3d.ai/en/api/api-reference/list/get-token), these are your Client ID and Client Secret; the node sends them as `Basic base64(access:secret)` to `/open-api/v1/auth/token` and uses the returned bearer token. **Both are required** — filling only one gives an error naming the missing half.
 
 ## 🔁 One image per asset (not one image of everything)
 

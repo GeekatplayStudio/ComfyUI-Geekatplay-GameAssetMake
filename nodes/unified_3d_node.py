@@ -41,7 +41,9 @@ class Unified3DGeneratorNode:
                 # locally — keys are never written into workflow JSON.
                 "tripo_api_key": ("STRING", {"default": "", "multiline": False, "password": True}),
                 "meshy_api_key": ("STRING", {"default": "", "multiline": False, "password": True}),
-                "hitem3d_api_key": ("STRING", {"default": "", "multiline": False, "password": True, "placeholder": "AccessKey:SecretKey"}),
+                # HiTem3D issues an AK/SK pair — two separate fields
+                "hitem3d_access_key": ("STRING", {"default": "", "multiline": False, "password": True, "placeholder": "Access Key (ak_...)"}),
+                "hitem3d_secret_key": ("STRING", {"default": "", "multiline": False, "password": True, "placeholder": "Secret Key (sk_...)"}),
                 "remember_keys": ("BOOLEAN", {"default": True, "label_on": "Save typed keys to OS vault", "label_off": "Use typed keys once"}),
             }
         }
@@ -52,7 +54,7 @@ class Unified3DGeneratorNode:
     CATEGORY = "Geekatplay GameAssetMake/3D-Generator"
     OUTPUT_NODE = True
 
-    def generate_3d_assets(self, approved_assets_json, engine="tripo", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True, tripo_api_key="", meshy_api_key="", hitem3d_api_key="", remember_keys=True):
+    def generate_3d_assets(self, approved_assets_json, engine="tripo", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True, tripo_api_key="", meshy_api_key="", hitem3d_access_key="", hitem3d_secret_key="", remember_keys=True):
         try:
             assets = json.loads(approved_assets_json)
         except Exception:
@@ -62,7 +64,8 @@ class Unified3DGeneratorNode:
         # otherwise keys come from the OS credential vault / env vars.
         tripo_key = keystore.resolve_key("tripo", tripo_api_key, remember_keys)
         meshy_key = keystore.resolve_key("meshy", meshy_api_key, remember_keys)
-        hitem3d_key = keystore.resolve_key("hitem3d", hitem3d_api_key, remember_keys)
+        hitem3d_access, hitem3d_secret = keystore.resolve_hitem3d_keys(
+            hitem3d_access_key, hitem3d_secret_key, remember_keys)
 
         output_dir = os.path.join(folder_paths.get_output_directory(), "3d_game_assets")
         os.makedirs(output_dir, exist_ok=True)
@@ -140,15 +143,16 @@ class Unified3DGeneratorNode:
                         else:
                             status_msg = "FAILED_NO_URL"
 
-                    elif engine == "hitem3d" and hitem3d_key:
+                    elif engine == "hitem3d" and hitem3d_access and hitem3d_secret:
                         task_id = submit_hitem3d_image_to_3d(
-                            hitem3d_key,
+                            hitem3d_access,
+                            hitem3d_secret,
                             img_path,
                             target_poly_count=max(100000, target_face_count),
                             enable_pbr=inc_texture,
                             output_format=output_format.lower() if output_format.lower() in ("obj", "glb", "fbx") else "glb"
                         )
-                        res = poll_hitem3d_task(hitem3d_key, task_id)
+                        res = poll_hitem3d_task(hitem3d_access, hitem3d_secret, task_id)
                         model_url = extract_model_url(res)
 
                         if model_url:

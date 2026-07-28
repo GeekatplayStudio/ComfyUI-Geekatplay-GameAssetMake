@@ -143,7 +143,7 @@ No C++ compilation is required — the plugin is pure Python + a `.uplugin` desc
 
 - **Tripo3D**: sign up at [platform.tripo3d.ai](https://platform.tripo3d.ai/) and grab an API key.
 - **Meshy**: sign up at [meshy.ai](https://www.meshy.ai/) and grab an API key.
-- **Hitem3D** *(experimental)*: sign up at [hitem3d.ai](https://hitem3d.ai/) and grab an API key. Verify the endpoint in `nodes/hitem3d_api.py` matches your account's API documentation before going live.
+- **HiTem3D**: sign up at [hitem3d.ai](https://hitem3d.ai/) and generate an API Key, which comes as an **AK/SK pair** — an Access Key (`ak_...`, the Client ID) and a Secret Key (`sk_...`, the Client Secret). Enter **both** in the 3D Generator's separate `hitem3d_access_key` / `hitem3d_secret_key` fields. The key must be in "Enabled" status to work. See the [HiTem3D API docs](https://docs.hi3d.ai/en/api/getting-started/quickstart).
 
 Set them as environment variables before launching ComfyUI:
 
@@ -179,7 +179,7 @@ Together: **full game assets from a single prompt** — 3D models, terrain, sky,
 
 The universal workflows use the **🔁 Batch Concept Generator**, which loops over the planner's prompts and renders **one image per asset** (each with its own seed), then verifies each is a single object on white — one human/animal for rigged characters — regenerating failures automatically before you ever see them.
 
-**API keys are entered once and stored in the OS credential vault** (Windows Credential Manager / macOS Keychain) — never in workflow JSON, so sharing a workflow never leaks a key. HiTem3D uses two keys entered as `AccessKey:SecretKey`. The terrain/skydome/texture workflows use nodes from the companion [ComfyUI-Blender-Toolbox](https://github.com/GeekatplayStudio/ComfyUI_Blender_toolbox) pack (same author) — install both. See [workflows/README.md](workflows/README.md) for details.
+**API keys are entered once and stored in the OS credential vault** (Windows Credential Manager / macOS Keychain) — never in workflow JSON, so sharing a workflow never leaks a key. HiTem3D issues an AK/SK pair, so it has **two separate fields**: `hitem3d_access_key` (`ak_...`) and `hitem3d_secret_key` (`sk_...`). The terrain/skydome/texture workflows use nodes from the companion [ComfyUI-Blender-Toolbox](https://github.com/GeekatplayStudio/ComfyUI_Blender_toolbox) pack (same author) — install both. See [workflows/README.md](workflows/README.md) for details.
 
 ---
 

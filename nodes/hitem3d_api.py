@@ -2,9 +2,12 @@
 # Geekatplay GameAssetMake — HiTem3D API client
 # (c) Geekatplay Studio / Vladimir Chopine
 #
-# Ported from ComfyUI-Blender-Toolbox (same author). HiTem3D uses
-# TWO keys — an Access Key and a Secret Key — exchanged via Basic
-# auth for a 24h bearer token. Stored key format: "AccessKey:SecretKey".
+# HiTem3D issues a TWO-PART credential (docs.hi3d.ai):
+#   Access Key = client_id, Secret Key = client_secret
+# They are combined as base64(client_id:client_secret) and sent as
+#   Authorization: Basic <...>
+# to POST /open-api/v1/auth/token, which returns data.accessToken —
+# a Bearer token used for submit-task / query-task.
 # =============================================================
 import os
 import time
@@ -51,22 +54,36 @@ def _get_token(access_key, secret_key):
 
 
 def split_keypair(api_key):
-    """'AccessKey:SecretKey' -> (access, secret). Raises with a clear message otherwise."""
+    """Legacy helper: 'AccessKey:SecretKey' -> (access, secret)."""
     if not api_key or ":" not in api_key:
         raise RuntimeError(
-            "HiTem3D needs TWO keys in the form 'AccessKey:SecretKey' "
-            "(ak_xxx:sk_xxx). Save them once with remember_keys enabled."
+            "HiTem3D needs an Access Key and a Secret Key. Enter both on the "
+            "3D Generator node (hitem3d_access_key / hitem3d_secret_key)."
         )
     access_key, secret_key = api_key.split(":", 1)
     return access_key.strip(), secret_key.strip()
 
 
-def submit_hitem3d_image_to_3d(api_key, image_path, target_poly_count=1000000, enable_pbr=True,
-                               model="hitem3dv2.1", resolution="1536fast", output_format="glb"):
+def _require_pair(access_key, secret_key):
+    access_key = str(access_key or "").strip()
+    secret_key = str(secret_key or "").strip()
+    if not access_key or not secret_key:
+        missing = "Access Key" if not access_key else "Secret Key"
+        raise RuntimeError(
+            f"HiTem3D {missing} is missing. HiTem3D needs BOTH an Access Key "
+            f"(ak_...) and a Secret Key (sk_...) — enter both on the 3D Generator "
+            f"node once with remember_keys enabled."
+        )
+    return access_key, secret_key
+
+
+def submit_hitem3d_image_to_3d(access_key, secret_key, image_path, target_poly_count=1000000,
+                               enable_pbr=True, model="hitem3dv2.1", resolution="1536fast",
+                               output_format="glb"):
     """
     Submits an Image-to-3D task to HiTem3D. Returns the task id.
     """
-    access_key, secret_key = split_keypair(api_key)
+    access_key, secret_key = _require_pair(access_key, secret_key)
     token = _get_token(access_key, secret_key)
 
     with open(image_path, "rb") as f:
@@ -102,11 +119,11 @@ def submit_hitem3d_image_to_3d(api_key, image_path, target_poly_count=1000000, e
     raise RuntimeError(f"HiTem3D error ({result.get('code')}): {msg}")
 
 
-def poll_hitem3d_task(api_key, task_id, timeout_sec=900, poll_interval=5):
+def poll_hitem3d_task(access_key, secret_key, task_id, timeout_sec=900, poll_interval=5):
     """
     Polls a HiTem3D task until success/failed/timeout. Returns the task data dict.
     """
-    access_key, secret_key = split_keypair(api_key)
+    access_key, secret_key = _require_pair(access_key, secret_key)
     start = time.time()
 
     while time.time() - start < timeout_sec:
