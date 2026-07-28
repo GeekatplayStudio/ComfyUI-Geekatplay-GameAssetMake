@@ -73,7 +73,8 @@ class UnrealEngineBridgeNode:
                 "rig_type": item.get("rig_type", "none"),
                 "scale": item.get("scale_override", [1.0, 1.0, 1.0]),
                 "collision": item.get("collision_type", "box"),
-                "location": item.get("world_placement_offset", [0.0, 0.0, 0.0])
+                "location": item.get("world_placement_offset", [0.0, 0.0, 0.0]),
+                "rotation_yaw": item.get("world_rotation_yaw", 0.0)
             }
             import_payload["assets"].append(asset_entry)
 

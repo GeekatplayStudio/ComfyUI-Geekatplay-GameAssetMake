@@ -14,6 +14,17 @@ Load via **Workflow → Open** or drag the `.json` onto the canvas.
 | `gameassetmake_textures.json` | **Seamless PBR material** (albedo + normal + roughness + metallic) | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** — Hunyuan3D 2.1 on your GPU, no API/keys/credits | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
+| `gameassetmake_full_scene_unreal.json` | 🎬 **FULL SCENE from one prompt** — terrain mesh + skydome + positioned assets | Unreal Engine 5 |
+
+## 🎬 Full scene from one prompt
+
+Type *"medieval village in a green valley"* into the **Scene Director** node and queue. It plans the whole scene — using a local Ollama LLM (`qwen2.5:7b` by default) for deep layout analysis, with a deterministic seeded layout engine as fallback — and drives three parallel branches:
+
+1. **Terrain** — the director's terrain brief → heightmap generation → **Terrain Mesh Builder** turns it into a real displaced, UV-mapped mesh (.glb) at true world size, imported into Unreal as a walkable static mesh placed at the origin. A 16-bit heightmap PNG is exported alongside for a native `Mode → Landscape → Import` if you prefer a real Landscape.
+2. **Skydome** — the director's sky brief → 2:1 panorama → seam heal → HDRI (.exr) → in Unreal, an **unlit emissive sky sphere is created automatically** (material built from the imported texture, applied to an inverted 800m dome).
+3. **Assets** — the director emits a positioned asset list (world x/y in meters, rotation yaw, per-asset scale — houses ring the well facing center, church at the edge, props scattered logically) that feeds the existing planner → per-asset concepts → **Gallery approval stop** (reject and re-queue until you like the set) → 3D generation → placed in Unreal at the exact layout coordinates and rotations.
+
+The gallery is the human-in-the-loop stop: nothing is spent on 3D generation until you approve. Re-queue with a different seed to redo any branch.
 
 The 3D provider (**Tripo3D / Meshy / HiTem3D**) is one global `engine` choice on the 3D Generator node — no more per-provider workflow duplicates. Unity delivery for terrain/skydome/textures: swap the bridge node for the Unity one.
 

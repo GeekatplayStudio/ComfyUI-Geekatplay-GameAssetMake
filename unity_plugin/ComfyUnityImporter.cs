@@ -25,6 +25,7 @@ namespace GeekatplayGameForge
         public string model_format;
         public float[] scale_override;
         public float[] world_placement_offset;
+        public float world_rotation_yaw;
     }
 
     [Serializable]
@@ -185,6 +186,11 @@ namespace GeekatplayGameForge
                     {
                         instance.transform.localScale = new Vector3(
                             meta.scale_override[0], meta.scale_override[2], meta.scale_override[1]);
+                    }
+                    // Unreal yaw (about Z-up) maps to Unity rotation about Y-up
+                    if (Mathf.Abs(meta.world_rotation_yaw) > 0.01f)
+                    {
+                        instance.transform.rotation = Quaternion.Euler(0f, meta.world_rotation_yaw, 0f);
                     }
                     Undo.RegisterCreatedObjectUndo(instance, "GameForge Import");
                 }

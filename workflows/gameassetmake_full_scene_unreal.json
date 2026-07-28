@@ -1,0 +1,1732 @@
+{
+  "last_node_id": 49,
+  "last_link_id": 37,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        380,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            2,
+            19,
+            31
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "z_image_turbo_bf16.safetensors",
+        "default"
+      ],
+      "title": "Z-Image Turbo (diffusion model)"
+    },
+    {
+      "id": 12,
+      "type": "CLIPLoader",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        380,
+        110
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3,
+            12,
+            13,
+            26,
+            27
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen_3_4b.safetensors",
+        "lumina2",
+        "default"
+      ],
+      "title": "Text Encoder (Qwen3-4B)"
+    },
+    {
+      "id": 13,
+      "type": "VAELoader",
+      "pos": [
+        40,
+        360
+      ],
+      "size": [
+        380,
+        60
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            21,
+            33
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "ae.safetensors"
+      ],
+      "title": "VAE (Flux-style 16ch)"
+    },
+    {
+      "id": 30,
+      "type": "SceneDirectorNode",
+      "pos": [
+        40,
+        470
+      ],
+      "size": [
+        400,
+        330
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "ollama_url",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "ollama_url"
+          }
+        },
+        {
+          "name": "ollama_model",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "ollama_model"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "llm_breakdown_json",
+          "type": "STRING",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "terrain_description",
+          "type": "STRING",
+          "links": [
+            11
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "skydome_prompt",
+          "type": "STRING",
+          "links": [
+            25
+          ],
+          "slot_index": 2
+        },
+        {
+          "name": "scene_layout_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 3
+        },
+        {
+          "name": "asset_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 4
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SceneDirectorNode"
+      },
+      "widgets_values": [
+        "medieval village in a green valley",
+        14,
+        "Stylized Low Poly",
+        200.0,
+        0,
+        "fixed",
+        true,
+        "http://127.0.0.1:11434",
+        "qwen2.5:7b"
+      ],
+      "title": "SCENE DIRECTOR - one prompt plans the whole scene"
+    },
+    {
+      "id": 2,
+      "type": "GameAssetPlannerNode",
+      "pos": [
+        520,
+        40
+      ],
+      "size": [
+        380,
+        240
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "llm_breakdown_json",
+          "type": "STRING",
+          "link": 1,
+          "widget": {
+            "name": "llm_breakdown_json"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "asset_manifest_json",
+          "type": "STRING",
+          "links": [
+            6,
+            8
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "prompt_list_json",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GameAssetPlannerNode"
+      },
+      "widgets_values": [
+        "(driven by Scene Director)",
+        14,
+        "Stylized Low Poly",
+        0,
+        "fixed",
+        ""
+      ],
+      "title": "Asset Planner (manifest from Scene Director layout)"
+    },
+    {
+      "id": 6,
+      "type": "BatchConceptGeneratorNode",
+      "pos": [
+        960,
+        40
+      ],
+      "size": [
+        420,
+        540
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "prompt_list_json",
+          "type": "STRING",
+          "link": 5
+        },
+        {
+          "name": "asset_manifest_json",
+          "type": "STRING",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "generation_report_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "image_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BatchConceptGeneratorNode"
+      },
+      "widgets_values": [
+        "multiple objects, group, collage, grid, reference sheet, text, watermark, cropped, blurry, low quality",
+        1024,
+        1024,
+        8,
+        1.0,
+        "euler",
+        "simple",
+        0,
+        "randomize",
+        16,
+        true,
+        "heuristic+vlm",
+        2,
+        "http://127.0.0.1:11434",
+        "gemma3:12b"
+      ],
+      "title": "Batch Concepts - one image per asset"
+    },
+    {
+      "id": 8,
+      "type": "GalleryApprovalNode",
+      "pos": [
+        1440,
+        40
+      ],
+      "size": [
+        420,
+        500
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7
+        },
+        {
+          "name": "asset_manifest_json",
+          "type": "STRING",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "approved_assets_json",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "image_paths_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "approved_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GalleryApprovalNode"
+      },
+      "widgets_values": [
+        "Manual UI Selection",
+        ""
+      ],
+      "title": "APPROVAL STOP - inspect, reject, re-run until good"
+    },
+    {
+      "id": 9,
+      "type": "Unified3DGeneratorNode",
+      "pos": [
+        1920,
+        40
+      ],
+      "size": [
+        420,
+        340
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "approved_assets_json",
+          "type": "STRING",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "asset_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Unified3DGeneratorNode"
+      },
+      "widgets_values": [
+        "tripo",
+        "FBX",
+        "quad",
+        15000,
+        true,
+        "",
+        "",
+        "",
+        "",
+        true
+      ],
+      "title": "3D Generator (Tripo/Meshy/HiTem3D, keys from vault)"
+    },
+    {
+      "id": 32,
+      "type": "FluxTerrainPromptGenerator",
+      "pos": [
+        520,
+        640
+      ],
+      "size": [
+        380,
+        220
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "description",
+          "type": "STRING",
+          "link": 11,
+          "widget": {
+            "name": "description"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive_prompt",
+          "type": "STRING",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": [
+            15
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FluxTerrainPromptGenerator"
+      },
+      "widgets_values": [
+        "(driven by Scene Director)",
+        "Hydraulic (Water flow)",
+        1.0,
+        "None",
+        "Grayscale (Heightmap)"
+      ],
+      "title": "Terrain Prompt (desc from Scene Director)"
+    },
+    {
+      "id": 33,
+      "type": "CLIPTextEncode",
+      "pos": [
+        960,
+        640
+      ],
+      "size": [
+        280,
+        90
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 12
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 14,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            16
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Terrain positive"
+    },
+    {
+      "id": 34,
+      "type": "CLIPTextEncode",
+      "pos": [
+        960,
+        770
+      ],
+      "size": [
+        280,
+        90
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 13
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 15,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Terrain negative"
+    },
+    {
+      "id": 35,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        960,
+        900
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            18
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ]
+    },
+    {
+      "id": 36,
+      "type": "KSampler",
+      "pos": [
+        1280,
+        640
+      ],
+      "size": [
+        280,
+        250
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 16
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 17
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        0,
+        "randomize",
+        8,
+        1.0,
+        "euler",
+        "simple",
+        1.0
+      ]
+    },
+    {
+      "id": 37,
+      "type": "VAEDecode",
+      "pos": [
+        1280,
+        930
+      ],
+      "size": [
+        200,
+        60
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 38,
+      "type": "SimpleHeightmapNormalizer",
+      "pos": [
+        1600,
+        640
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            23
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SimpleHeightmapNormalizer"
+      },
+      "widgets_values": [],
+      "title": "Normalize heightmap"
+    },
+    {
+      "id": 39,
+      "type": "TerrainMeshBuilderNode",
+      "pos": [
+        1920,
+        640
+      ],
+      "size": [
+        400,
+        260
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "heightmap",
+          "type": "IMAGE",
+          "link": 23
+        },
+        {
+          "name": "ground_texture",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "links": [
+            24
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "mesh_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "heightmap16_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TerrainMeshBuilderNode"
+      },
+      "widgets_values": [
+        "SceneTerrain",
+        256,
+        500.0,
+        60.0,
+        1
+      ],
+      "title": "Terrain Mesh Builder (heightmap -> walkable mesh)"
+    },
+    {
+      "id": 41,
+      "type": "CLIPTextEncode",
+      "pos": [
+        520,
+        1080
+      ],
+      "size": [
+        340,
+        100
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 26
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 25,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            28
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Sky positive (from Scene Director)"
+    },
+    {
+      "id": 42,
+      "type": "CLIPTextEncode",
+      "pos": [
+        520,
+        1220
+      ],
+      "size": [
+        340,
+        90
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            29
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "text, watermark, people, buildings, seam, border"
+      ],
+      "title": "Sky negative"
+    },
+    {
+      "id": 43,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        520,
+        1350
+      ],
+      "size": [
+        300,
+        100
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            30
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        2048,
+        1024,
+        1
+      ],
+      "title": "Panorama latent 2:1"
+    },
+    {
+      "id": 44,
+      "type": "KSampler",
+      "pos": [
+        960,
+        1080
+      ],
+      "size": [
+        280,
+        250
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 31
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 28
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 29
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            32
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        0,
+        "randomize",
+        8,
+        1.0,
+        "euler",
+        "simple",
+        1.0
+      ]
+    },
+    {
+      "id": 45,
+      "type": "VAEDecode",
+      "pos": [
+        960,
+        1370
+      ],
+      "size": [
+        200,
+        60
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 32
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            34
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 46,
+      "type": "Heal360Seam",
+      "pos": [
+        1280,
+        1080
+      ],
+      "size": [
+        260,
+        90
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            35
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Heal360Seam"
+      },
+      "widgets_values": [
+        0.05
+      ],
+      "title": "Heal 360 seam"
+    },
+    {
+      "id": 47,
+      "type": "SaveFakeHDRI",
+      "pos": [
+        1280,
+        1220
+      ],
+      "size": [
+        260,
+        150
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "full_path",
+          "type": "STRING",
+          "links": [
+            36
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveFakeHDRI"
+      },
+      "widgets_values": [
+        "SceneSkydome",
+        2.0,
+        2.2
+      ],
+      "title": "Save HDRI (.exr)"
+    },
+    {
+      "id": 48,
+      "type": "EnvironmentAssetExportNode",
+      "pos": [
+        1600,
+        1080
+      ],
+      "size": [
+        340,
+        220
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "file_path",
+          "type": "STRING",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "links": [
+            37
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "file_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EnvironmentAssetExportNode"
+      },
+      "widgets_values": [
+        "skydome_hdri",
+        "SceneSkydome",
+        1000.0,
+        200.0
+      ],
+      "title": "Export skydome (auto sky-sphere in Unreal)"
+    },
+    {
+      "id": 10,
+      "type": "UnrealEngineBridgeNode",
+      "pos": [
+        2400,
+        40
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "link": 10
+        },
+        {
+          "name": "unreal_project_content_dir",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "unreal_project_content_dir"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "unreal_import_payload_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "imported_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "success",
+          "type": "BOOLEAN",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UnrealEngineBridgeNode"
+      },
+      "widgets_values": [
+        "127.0.0.1",
+        30010,
+        "HTTP Bridge Plugin (Port 30010)",
+        "/Game/Assets/AI_Generated/",
+        100.0,
+        true,
+        true,
+        ""
+      ],
+      "title": "Deliver ASSETS (placed at layout coords)"
+    },
+    {
+      "id": 40,
+      "type": "UnrealEngineBridgeNode",
+      "pos": [
+        2400,
+        640
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "link": 24
+        },
+        {
+          "name": "unreal_project_content_dir",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "unreal_project_content_dir"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "unreal_import_payload_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "imported_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "success",
+          "type": "BOOLEAN",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UnrealEngineBridgeNode"
+      },
+      "widgets_values": [
+        "127.0.0.1",
+        30010,
+        "HTTP Bridge Plugin (Port 30010)",
+        "/Game/Assets/AI_Generated/",
+        100.0,
+        true,
+        true,
+        ""
+      ],
+      "title": "Deliver TERRAIN MESH"
+    },
+    {
+      "id": 49,
+      "type": "UnrealEngineBridgeNode",
+      "pos": [
+        2400,
+        1080
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "link": 37
+        },
+        {
+          "name": "unreal_project_content_dir",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "unreal_project_content_dir"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "unreal_import_payload_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "imported_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "success",
+          "type": "BOOLEAN",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UnrealEngineBridgeNode"
+      },
+      "widgets_values": [
+        "127.0.0.1",
+        30010,
+        "HTTP Bridge Plugin (Port 30010)",
+        "/Game/Assets/AI_Generated/",
+        100.0,
+        true,
+        true,
+        ""
+      ],
+      "title": "Deliver SKYDOME (auto-setup)"
+    },
+    {
+      "id": 11,
+      "type": "EngineConnectionCheckNode",
+      "pos": [
+        2400,
+        1440
+      ],
+      "size": [
+        400,
+        150
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "engine_online",
+          "type": "BOOLEAN",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "status_message",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EngineConnectionCheckNode"
+      },
+      "widgets_values": [
+        "unreal",
+        "127.0.0.1",
+        30010
+      ],
+      "title": "Verify Unreal Bridge Is Running"
+    }
+  ],
+  "links": [
+    [
+      1,
+      30,
+      0,
+      2,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      1,
+      0,
+      6,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      12,
+      0,
+      6,
+      1,
+      "CLIP"
+    ],
+    [
+      4,
+      13,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      2,
+      1,
+      6,
+      3,
+      "STRING"
+    ],
+    [
+      6,
+      2,
+      0,
+      6,
+      4,
+      "STRING"
+    ],
+    [
+      7,
+      6,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      2,
+      0,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      0,
+      "STRING"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      0,
+      "STRING"
+    ],
+    [
+      11,
+      30,
+      1,
+      32,
+      0,
+      "STRING"
+    ],
+    [
+      12,
+      12,
+      0,
+      33,
+      0,
+      "CLIP"
+    ],
+    [
+      13,
+      12,
+      0,
+      34,
+      0,
+      "CLIP"
+    ],
+    [
+      14,
+      32,
+      0,
+      33,
+      1,
+      "STRING"
+    ],
+    [
+      15,
+      32,
+      1,
+      34,
+      1,
+      "STRING"
+    ],
+    [
+      16,
+      33,
+      0,
+      36,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      17,
+      34,
+      0,
+      36,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      35,
+      0,
+      36,
+      3,
+      "LATENT"
+    ],
+    [
+      19,
+      1,
+      0,
+      36,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      36,
+      0,
+      37,
+      0,
+      "LATENT"
+    ],
+    [
+      21,
+      13,
+      0,
+      37,
+      1,
+      "VAE"
+    ],
+    [
+      22,
+      37,
+      0,
+      38,
+      0,
+      "IMAGE"
+    ],
+    [
+      23,
+      38,
+      0,
+      39,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      39,
+      0,
+      40,
+      0,
+      "STRING"
+    ],
+    [
+      25,
+      30,
+      2,
+      41,
+      1,
+      "STRING"
+    ],
+    [
+      26,
+      12,
+      0,
+      41,
+      0,
+      "CLIP"
+    ],
+    [
+      27,
+      12,
+      0,
+      42,
+      0,
+      "CLIP"
+    ],
+    [
+      28,
+      41,
+      0,
+      44,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      29,
+      42,
+      0,
+      44,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      30,
+      43,
+      0,
+      44,
+      3,
+      "LATENT"
+    ],
+    [
+      31,
+      1,
+      0,
+      44,
+      0,
+      "MODEL"
+    ],
+    [
+      32,
+      44,
+      0,
+      45,
+      0,
+      "LATENT"
+    ],
+    [
+      33,
+      13,
+      0,
+      45,
+      1,
+      "VAE"
+    ],
+    [
+      34,
+      45,
+      0,
+      46,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      46,
+      0,
+      47,
+      0,
+      "IMAGE"
+    ],
+    [
+      36,
+      47,
+      0,
+      48,
+      1,
+      "STRING"
+    ],
+    [
+      37,
+      48,
+      0,
+      49,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "workflow_info": {
+      "name": "Geekatplay GameAssetMake \u2014 FULL SCENE from one prompt (Unreal)",
+      "author": "Geekatplay Studio \u2014 Vladimir Chopine",
+      "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
+    }
+  },
+  "version": 0.4
+}

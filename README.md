@@ -24,6 +24,7 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 ## ✨ Key Features
 
+- 🎬 **Full Scene From One Prompt** — the Scene Director node turns *"medieval village"* into a coordinated plan: terrain brief, skydome brief, and a positioned asset layout (meters + rotations, planned by a local Ollama LLM with a deterministic fallback). Terrain becomes a real walkable mesh, the skydome auto-builds as an emissive sphere in Unreal, and every asset spawns at its planned coordinates.
 - 🧠 **Natural-Language Asset Planner** — one prompt becomes a full manifest of game-ready assets with names, categories, scale, collision shape, and world placement.
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
 - 🧊 **Multiple 3D Backends, cloud or local** — cloud: **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **HiTem3D**, chosen globally on the 3D Generator. Local: **Hunyuan3D 2.1** runs entirely on your own GPU — no API, no keys, no credits, nothing uploaded. Both paths feed the same engine bridges and show a results panel listing every generated model.
@@ -80,6 +81,8 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── environment_export_node.py    # 🌍 Terrain/Skydome/Texture export
 │   ├── unified_3d_node.py            # 🧊 Unified 3D Generator (cloud APIs)
 │   ├── local_hunyuan3d_node.py       # 🖥️ Local 3D Generator (Hunyuan3D 2.1)
+│   ├── scene_director_node.py        # 🎬 Scene Director (prompt → scene plan)
+│   ├── terrain_mesh_node.py          # ⛰️ Terrain Mesh Builder (heightmap → mesh)
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
 │   └── engine_check_node.py          # 🔌 Engine Connection Check
@@ -177,6 +180,7 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 | `gameassetmake_textures.json` | Seamless PBR material set (albedo/normal/roughness/metallic) | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** via Hunyuan3D 2.1 — no API, no keys, no credits | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
+| `gameassetmake_full_scene_unreal.json` | 🎬 **Full scene from one prompt** — terrain + sky + placed assets, with approval stop | Unreal Engine 5 |
 
 Together: **full game assets from a single prompt** — 3D models, terrain, sky, and materials. All preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white.
 
