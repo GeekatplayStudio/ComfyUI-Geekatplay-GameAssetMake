@@ -1,17 +1,17 @@
 {
-  "last_node_id": 11,
+  "last_node_id": 13,
   "last_link_id": 13,
   "nodes": [
     {
       "id": 1,
-      "type": "CheckpointLoaderSimple",
+      "type": "UNETLoader",
       "pos": [
         40,
-        200
+        60
       ],
       "size": [
-        340,
-        100
+        380,
+        90
       ],
       "flags": {},
       "order": 0,
@@ -25,7 +25,33 @@
             1
           ],
           "slot_index": 0
-        },
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "z_image_turbo_bf16.safetensors",
+        "default"
+      ],
+      "title": "Z-Image Turbo (diffusion model)"
+    },
+    {
+      "id": 12,
+      "type": "CLIPLoader",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        380,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
         {
           "name": "CLIP",
           "type": "CLIP",
@@ -33,38 +59,65 @@
             2,
             3
           ],
-          "slot_index": 1
-        },
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen_3_4b.safetensors",
+        "lumina2",
+        "default"
+      ],
+      "title": "Text Encoder (Qwen3-4B)"
+    },
+    {
+      "id": 13,
+      "type": "VAELoader",
+      "pos": [
+        40,
+        360
+      ],
+      "size": [
+        380,
+        60
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
         {
           "name": "VAE",
           "type": "VAE",
           "links": [
             9
           ],
-          "slot_index": 2
+          "slot_index": 0
         }
       ],
       "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
+        "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
-        "flux1-dev-fp8.safetensors"
+        "ae.safetensors"
       ],
-      "title": "Checkpoint (Flux fp8 recommended; SDXL/Z-Image also work)"
+      "title": "VAE (Flux-style 16ch)"
     },
     {
       "id": 2,
       "type": "GameAssetPlannerNode",
       "pos": [
         40,
-        380
+        470
       ],
       "size": [
         380,
         260
       ],
       "flags": {},
-      "order": 1,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -124,7 +177,7 @@
         120
       ],
       "flags": {},
-      "order": 2,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -171,7 +224,7 @@
         120
       ],
       "flags": {},
-      "order": 3,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -196,11 +249,11 @@
       "widgets_values": [
         "blurry, low quality, watermark, text, cropped, multiple objects"
       ],
-      "title": "Negative"
+      "title": "Negative (only active if cfg > 1.0)"
     },
     {
       "id": 5,
-      "type": "EmptyLatentImage",
+      "type": "EmptySD3LatentImage",
       "pos": [
         480,
         560
@@ -210,7 +263,7 @@
         110
       ],
       "flags": {},
-      "order": 4,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -224,14 +277,14 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "EmptyLatentImage"
+        "Node name for S&R": "EmptySD3LatentImage"
       },
       "widgets_values": [
         1024,
         1024,
         12
       ],
-      "title": "Batch Latents (match asset count)"
+      "title": "Batch Latents (16ch \u2014 match asset count)"
     },
     {
       "id": 6,
@@ -245,7 +298,7 @@
         260
       ],
       "flags": {},
-      "order": 5,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -285,12 +338,13 @@
       "widgets_values": [
         0,
         "randomize",
-        20,
+        8,
         1.0,
         "euler",
         "simple",
         1.0
-      ]
+      ],
+      "title": "KSampler (Turbo: 8 steps, cfg 1.0)"
     },
     {
       "id": 7,
@@ -304,7 +358,7 @@
         60
       ],
       "flags": {},
-      "order": 6,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -345,7 +399,7 @@
         520
       ],
       "flags": {},
-      "order": 7,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -401,7 +455,7 @@
         320
       ],
       "flags": {},
-      "order": 8,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -453,7 +507,7 @@
         220
       ],
       "flags": {},
-      "order": 9,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -504,7 +558,7 @@
         160
       ],
       "flags": {},
-      "order": 10,
+      "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -543,16 +597,16 @@
     ],
     [
       2,
-      1,
-      1,
+      12,
+      0,
       3,
       0,
       "CLIP"
     ],
     [
       3,
-      1,
-      1,
+      12,
+      0,
       4,
       0,
       "CLIP"
@@ -599,8 +653,8 @@
     ],
     [
       9,
-      1,
-      2,
+      13,
+      0,
       7,
       1,
       "VAE"

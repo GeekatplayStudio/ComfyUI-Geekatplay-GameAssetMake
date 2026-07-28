@@ -40,7 +40,7 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 ```mermaid
 flowchart TD
     Prompt["Natural Language Prompt"] --> Planner["🎮 GameAssetMake Asset Planner\n(builds asset manifest, 30+ art styles)"]
-    Planner --> ConceptGen["2D Concept Sampler\n(Flux recommended · SDXL / Z-Image also work)\none object · 3/4 view · isolated on white"]
+    Planner --> ConceptGen["2D Concept Sampler\n(Z-Image Turbo recommended · ~7.5s/image)\none object · 3/4 view · isolated on white"]
     ConceptGen --> GalleryUI["🖼️ Asset Gallery & Approval UI\n(inspect, approve, pick PBR/rigging)"]
     GalleryUI -->|"approved assets"| Unified3D["🧊 Unified 3D Generator\n(engine chosen globally)"]
     Unified3D -->|"Tripo3D API"| Tripo["Tripo3D\nImage-to-3D · Quad Mesh · PBR · Auto-Rig"]
@@ -171,14 +171,16 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 | `gameassetmake_unity_tripo.json` | Unity | Tripo3D |
 | `gameassetmake_unity_meshy.json` | Unity | Meshy |
 
-Then just: pick your checkpoint on the loader node (Flux fp8 is preset and recommended; SDXL/Z-Image also work — adjust `cfg` accordingly), add your API key on the 3D Generator, and queue. See [workflows/README.md](workflows/README.md) for details.
+All five are preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white. It loads via three nodes (`UNETLoader` + `CLIPLoader` + `VAELoader`) rather than one checkpoint.
+
+Then just: add your API key on the 3D Generator and queue. See [workflows/README.md](workflows/README.md) for the exact model files and how to swap in a different checkpoint.
 
 ---
 
 ## 🎮 Using the Pipeline
 
 1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick one of 30+ `art_style` presets, and set `target_asset_count`. It outputs `asset_manifest_json` and `prompt_list_json` — prompts are built for **one object per image, 3/4 view to the camera, isolated on pure white**.
-2. **Generate 2D concepts** — feed `prompt_list_json` into a ComfyUI text-to-image sampler as a batch (**Flux recommended**; SDXL/Z-Image also work), producing one concept image per asset.
+2. **Generate 2D concepts** — feed `prompt_list_json` into a ComfyUI text-to-image sampler as a batch (**Z-Image Turbo recommended** — fast and the best at honoring "single object, isolated on white"), producing one concept image per asset.
 3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**. (The 3D provider — Tripo3D / Meshy / Hitem3D — is set globally on the 3D Generator node, not per asset.)
 4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**, pick your `engine`. It submits cloud tasks, polls for completion, downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`, and shows a results panel of every model returned by the API.
 5. **Verify the engine bridge** — drop a **🔌 GameAssetMake Engine Connection Check** node (or just rely on the bridge nodes' own pre-send check) to confirm Unreal/Unity is running and reachable before sending assets.
