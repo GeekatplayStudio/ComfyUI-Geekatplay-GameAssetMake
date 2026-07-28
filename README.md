@@ -26,7 +26,7 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 - 🧠 **Natural-Language Asset Planner** — one prompt becomes a full manifest of game-ready assets with names, categories, scale, collision shape, and world placement.
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
-- 🧊 **Dual Cloud 3D Backends** — generate meshes with either **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig) or **Meshy** (PBR maps, poly-count targeting) — mix and match per asset.
+- 🧊 **Multiple Cloud 3D Backends** — generate meshes with **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **Hitem3D** *(experimental)* — mix and match per asset, or force one provider with the `engine_override` option.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
 - 📦 **Unity Editor Bridge** — a single-file Unity Editor script listening on port `8080` that imports models into `Assets/AI_Generated/` and instantiates them into the open scene, with automatic Unreal→Unity unit/axis conversion.
 - 🧪 **Dry-Run Mock Mode** — test the entire pipeline end-to-end with zero API credits spent before going live.
@@ -67,6 +67,7 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── gallery_approval_node.py      # 🖼️ Gallery & Approval UI
 │   ├── tripo_api.py                  # Tripo3D API client
 │   ├── meshy_api.py                  # Meshy API client
+│   ├── hitem3d_api.py                # Hitem3D API client (experimental)
 │   ├── unified_3d_node.py            # 🧊 Unified 3D Generator
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
 │   └── unity_bridge_node.py          # 📦 Unity Engine Bridge
@@ -80,8 +81,14 @@ ComfyUI-Geekatplay-GameAssetMake/
 │           ├── init_unreal.py
 │           ├── comfy_server.py
 │           └── comfy_importer.py
-└── unity_plugin/
-    └── ComfyUnityImporter.cs         # Unity Editor bridge script
+├── unity_plugin/
+│   └── ComfyUnityImporter.cs         # Unity Editor bridge script
+└── workflows/                        # Ready-to-load example workflows
+    ├── gameassetmake_unreal_tripo.json
+    ├── gameassetmake_unreal_meshy.json
+    ├── gameassetmake_unreal_hitem3d.json
+    ├── gameassetmake_unity_tripo.json
+    └── gameassetmake_unity_meshy.json
 ```
 
 ---
@@ -125,6 +132,7 @@ No C++ compilation is required — the plugin is pure Python + a `.uplugin` desc
 
 - **Tripo3D**: sign up at [platform.tripo3d.ai](https://platform.tripo3d.ai/) and grab an API key.
 - **Meshy**: sign up at [meshy.ai](https://www.meshy.ai/) and grab an API key.
+- **Hitem3D** *(experimental)*: sign up at [hitem3d.ai](https://hitem3d.ai/) and grab an API key. Verify the endpoint in `nodes/hitem3d_api.py` matches your account's API documentation before going live.
 
 Set them as environment variables before launching ComfyUI:
 
@@ -141,6 +149,22 @@ $env:MESHY_API_KEY = "your_meshy_key"
 ```
 
 ...or simply paste them into the **🧊 GameAssetMake 3D Generator** node's `tripo_api_key` / `meshy_api_key` fields. Until you add keys, leave `dry_run_mock` **ON** — the pipeline still runs end-to-end and produces placeholder mesh files so you can validate the workflow for free.
+
+---
+
+## 🚀 Quick Start with Example Workflows
+
+The fastest way to try the pipeline: load one of the ready-made workflows from the [`workflows/`](workflows/) folder (**Workflow → Open** or drag the `.json` onto the canvas):
+
+| Workflow | Engine | 3D Provider |
+|---|---|---|
+| `gameassetmake_unreal_tripo.json` | Unreal Engine 5 | Tripo3D |
+| `gameassetmake_unreal_meshy.json` | Unreal Engine 5 | Meshy |
+| `gameassetmake_unreal_hitem3d.json` | Unreal Engine 5 | Hitem3D *(experimental)* |
+| `gameassetmake_unity_tripo.json` | Unity | Tripo3D |
+| `gameassetmake_unity_meshy.json` | Unity | Meshy |
+
+Then just: pick your SDXL checkpoint on the loader node, add your API key on the 3D Generator, and queue. See [workflows/README.md](workflows/README.md) for details.
 
 ---
 

@@ -11,6 +11,10 @@ from .meshy_api import (
     submit_meshy_image_to_3d,
     poll_meshy_task
 )
+from .hitem3d_api import (
+    submit_hitem3d_image_to_3d,
+    poll_hitem3d_task
+)
 
 class Unified3DGeneratorNode:
     """
@@ -25,6 +29,8 @@ class Unified3DGeneratorNode:
                 "approved_assets_json": ("STRING", {"forceInput": True}),
                 "tripo_api_key": ("STRING", {"default": "", "multiline": False}),
                 "meshy_api_key": ("STRING", {"default": "", "multiline": False}),
+                "hitem3d_api_key": ("STRING", {"default": "", "multiline": False}),
+                "engine_override": (["use manifest (per-asset)", "tripo", "meshy", "hitem3d"], {"default": "use manifest (per-asset)"}),
                 "output_format": (["FBX", "GLB", "OBJ"], {"default": "FBX"}),
                 "default_topology": (["quad", "triangle"], {"default": "quad"}),
                 "target_face_count": ("INT", {"default": 15000, "min": 1000, "max": 100000, "step": 1000}),
@@ -38,7 +44,7 @@ class Unified3DGeneratorNode:
     CATEGORY = "Geekatplay GameAssetMake/3D-Generator"
     OUTPUT_NODE = True
 
-    def generate_3d_assets(self, approved_assets_json, tripo_api_key="", meshy_api_key="", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True):
+    def generate_3d_assets(self, approved_assets_json, tripo_api_key="", meshy_api_key="", hitem3d_api_key="", engine_override="use manifest (per-asset)", output_format="FBX", default_topology="quad", target_face_count=15000, dry_run_mock=True):
         try:
             assets = json.loads(approved_assets_json)
         except Exception:
@@ -46,6 +52,7 @@ class Unified3DGeneratorNode:
 
         tripo_key = tripo_api_key or os.getenv("TRIPO_API_KEY", "")
         meshy_key = meshy_api_key or os.getenv("MESHY_API_KEY", "")
+        hitem3d_key = hitem3d_api_key or os.getenv("HITEM3D_API_KEY", "")
 
         output_dir = os.path.join(folder_paths.get_output_directory(), "3d_game_assets")
         os.makedirs(output_dir, exist_ok=True)
@@ -57,6 +64,8 @@ class Unified3DGeneratorNode:
             asset_name = item.get("name", f"GameAsset_{idx}")
             img_path = item.get("image_path", "")
             engine = item.get("engine_target", "tripo").lower()
+            if engine_override != "use manifest (per-asset)":
+                engine = engine_override
             inc_texture = item.get("include_texture", True)
             inc_rigging = item.get("include_rigging", False)
             rig_type = item.get("rig_type", "biped")
@@ -117,6 +126,24 @@ class Unified3DGeneratorNode:
                         model_urls = res.get("model_urls", {})
                         model_url = model_urls.get(output_format.lower()) or model_urls.get("glb")
                         
+                        if model_url:
+                            download_file(model_url, model_dest_path)
+                            status_msg = "LIVE_SUCCESS"
+                        else:
+                            status_msg = "FAILED_NO_URL"
+
+                    elif engine == "hitem3d" and hitem3d_key:
+                        task_id = submit_hitem3d_image_to_3d(
+                            hitem3d_key,
+                            img_path,
+                            target_poly_count=target_face_count,
+                            enable_pbr=inc_texture
+                        )
+                        res = poll_hitem3d_task(hitem3d_key, task_id)
+
+                        model_urls = res.get("model_urls") or res.get("output") or {}
+                        model_url = model_urls.get(output_format.lower()) or model_urls.get("glb") or model_urls.get("model")
+
                         if model_url:
                             download_file(model_url, model_dest_path)
                             status_msg = "LIVE_SUCCESS"

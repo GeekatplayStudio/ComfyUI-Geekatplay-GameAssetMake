@@ -19,7 +19,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GameAssetPlannerNode": "🎮 GameAssetMake Asset Planner (AI Breakdown)",
     "GalleryApprovalNode": "🖼️ GameAssetMake Asset Gallery & Approval UI",
-    "Unified3DGeneratorNode": "🧊 GameAssetMake 3D Generator (Tripo / Meshy)",
+    "Unified3DGeneratorNode": "🧊 GameAssetMake 3D Generator (Tripo / Meshy / Hitem3D)",
     "UnrealEngineBridgeNode": "⚡ GameAssetMake Unreal Engine Bridge",
     "UnityEngineBridgeNode": "📦 GameAssetMake Unity Engine Bridge"
 }

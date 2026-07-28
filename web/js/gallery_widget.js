@@ -42,6 +42,7 @@ function renderCards(container, items) {
                     <select class="opt-engine">
                         <option value="tripo" ${item.engine_target === "tripo" ? "selected" : ""}>Tripo3D</option>
                         <option value="meshy" ${item.engine_target === "meshy" ? "selected" : ""}>Meshy</option>
+                        <option value="hitem3d" ${item.engine_target === "hitem3d" ? "selected" : ""}>Hitem3D</option>
                     </select>
                 </label>
                 <label><input type="checkbox" class="opt-texture" ${item.include_texture ? "checked" : ""}> PBR Texture</label>
