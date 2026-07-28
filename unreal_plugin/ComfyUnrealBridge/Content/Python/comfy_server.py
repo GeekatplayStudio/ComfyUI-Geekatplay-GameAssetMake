@@ -2,6 +2,7 @@
 # Geekatplay GameAssetMake — Unreal Engine Bridge HTTP listener
 # (c) Geekatplay Studio / Vladimir Chopine
 # =============================================================
+import importlib
 import json
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -61,10 +62,21 @@ def process_pending_imports_on_tick(delta_seconds):
     while _pending_payloads:
         payload = _pending_payloads.pop(0)
         try:
+            # Unreal caches Python modules for the whole editor session, so plugin
+            # edits otherwise need a full editor restart to take effect. Reload
+            # before every payload so the newest importer always runs.
+            try:
+                importlib.reload(comfy_importer)
+            except Exception as reload_err:
+                if unreal:
+                    unreal.log_warning(f"[GameAssetMake] Importer reload failed "
+                                       f"({reload_err}); using the already-loaded copy.")
             comfy_importer.import_and_place_manifest_payload(payload)
         except Exception as e:
             if unreal:
+                import traceback
                 unreal.log_error(f"[GameAssetMake Bridge Import Error]: {e}")
+                unreal.log_error(traceback.format_exc())
 
 
 def start_bridge_server():

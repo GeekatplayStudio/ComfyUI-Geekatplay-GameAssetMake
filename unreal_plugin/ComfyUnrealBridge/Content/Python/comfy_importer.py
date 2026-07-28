@@ -10,6 +10,10 @@ try:
 except ImportError:
     unreal = None
 
+# Bump when the importer changes; printed on every payload so the log proves
+# which version actually ran (Unreal caches Python for the editor session).
+IMPORTER_VERSION = "2026.07.28-pbr-sky"
+
 
 def _find_static_mesh(folder, name_hint):
     """
@@ -492,7 +496,11 @@ def import_and_place_manifest_payload(payload_dict):
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
     editor_actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 
-    unreal.log(f"[GameAssetMake] Batch import: {len(assets)} asset(s) -> '{target_folder}'")
+    unreal.log(f"[GameAssetMake] importer v{IMPORTER_VERSION} | batch of {len(assets)} "
+               f"asset(s) -> '{target_folder}' | scene setup: {auto_place}")
+    for a in assets:
+        unreal.log(f"[GameAssetMake]   received: name='{a.get('name')}' "
+                   f"category='{a.get('category')}' file='{os.path.basename(str(a.get('source_file')))}'")
     imported_count = 0
 
     # Season/time-of-day sun from the Scene Director (if provided)
@@ -529,7 +537,10 @@ def _process_one_asset(asset, asset_tools, editor_actor_subsystem,
     rig_type = asset.get("rig_type", "none")
     category = asset.get("category", "")
     ext = source_path.rsplit(".", 1)[-1].lower()
-    is_image = ext in ("png", "jpg", "jpeg", "exr", "hdr", "tga")
+    # CATEGORY is authoritative: an environment asset must never fall through to
+    # the mesh/FBX path just because its file carries an unexpected extension.
+    ENV_CATEGORIES = ("skydome", "skydome_hdri", "terrain", "texture", "tileable_texture")
+    is_image = ext in ("png", "jpg", "jpeg", "exr", "hdr", "tga") or category in ENV_CATEGORIES
     is_gltf = ext in ("glb", "gltf")
 
     # ---- image-based environment assets --------------------------------
