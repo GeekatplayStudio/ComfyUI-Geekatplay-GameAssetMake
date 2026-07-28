@@ -1,6 +1,6 @@
 {
   "last_node_id": 55,
-  "last_link_id": 13,
+  "last_link_id": 24,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,8 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            1
+            1,
+            16
           ],
           "slot_index": 0
         }
@@ -48,7 +49,7 @@
         110
       ],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -57,7 +58,8 @@
           "type": "CLIP",
           "links": [
             2,
-            3
+            3,
+            14
           ],
           "slot_index": 0
         }
@@ -84,7 +86,7 @@
         60
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -92,7 +94,8 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            8
+            10,
+            21
           ],
           "slot_index": 0
         }
@@ -106,6 +109,60 @@
       "title": "VAE (Flux-style 16ch)"
     },
     {
+      "id": 2,
+      "type": "FluxTerrainPromptGenerator",
+      "pos": [
+        40,
+        470
+      ],
+      "size": [
+        380,
+        240
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "description",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "description"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive_prompt",
+          "type": "STRING",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FluxTerrainPromptGenerator"
+      },
+      "widgets_values": [
+        "vast mountain range with a central valley and a winding river",
+        "Hydraulic (Water flow)",
+        1.0,
+        "None",
+        "Grayscale (Heightmap)"
+      ],
+      "title": "Terrain Prompt (from description) - Blender-Toolbox"
+    },
+    {
       "id": 3,
       "type": "CLIPTextEncode",
       "pos": [
@@ -113,46 +170,7 @@
         200
       ],
       "size": [
-        340,
-        200
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            4
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "equirectangular 360 degree panorama of a dramatic fantasy sky at golden hour, towering clouds, atmospheric haze, seamless horizontal wrap, high dynamic range, no ground objects"
-      ],
-      "title": "Skydome Prompt (edit me)"
-    },
-    {
-      "id": 4,
-      "type": "CLIPTextEncode",
-      "pos": [
-        480,
-        450
-      ],
-      "size": [
-        340,
+        300,
         110
       ],
       "flags": {},
@@ -162,7 +180,15 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 3
+          "link": 2
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 4,
+          "widget": {
+            "name": "text"
+          }
         }
       ],
       "outputs": [
@@ -170,7 +196,7 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            5
+            6
           ],
           "slot_index": 0
         }
@@ -179,16 +205,16 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "text, watermark, people, buildings, seam, border"
+        ""
       ],
-      "title": "Negative"
+      "title": "Positive (terrain heightmap)"
     },
     {
-      "id": 5,
-      "type": "EmptySD3LatentImage",
+      "id": 4,
+      "type": "CLIPTextEncode",
       "pos": [
         480,
-        610
+        360
       ],
       "size": [
         300,
@@ -197,13 +223,61 @@
       "flags": {},
       "order": 3,
       "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 5,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            7,
+            18
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Negative"
+    },
+    {
+      "id": 5,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        480,
+        520
+      ],
+      "size": [
+        300,
+        110
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            6
+            8
           ],
           "slot_index": 0
         }
@@ -212,17 +286,17 @@
         "Node name for S&R": "EmptySD3LatentImage"
       },
       "widgets_values": [
-        2048,
+        1024,
         1024,
         1
       ],
-      "title": "Panorama Latent 2:1 (16ch)"
+      "title": "Heightmap Latent (16ch)"
     },
     {
       "id": 6,
       "type": "KSampler",
       "pos": [
-        880,
+        840,
         200
       ],
       "size": [
@@ -230,7 +304,7 @@
         260
       ],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -241,17 +315,17 @@
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 4
+          "link": 6
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 5
+          "link": 7
         },
         {
           "name": "latent_image",
           "type": "LATENT",
-          "link": 6
+          "link": 8
         }
       ],
       "outputs": [
@@ -259,7 +333,7 @@
           "name": "LATENT",
           "type": "LATENT",
           "links": [
-            7
+            9
           ],
           "slot_index": 0
         }
@@ -281,7 +355,7 @@
       "id": 7,
       "type": "VAEDecode",
       "pos": [
-        880,
+        840,
         520
       ],
       "size": [
@@ -289,18 +363,18 @@
         60
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 7
+          "link": 9
         },
         {
           "name": "vae",
           "type": "VAE",
-          "link": 8
+          "link": 10
         }
       ],
       "outputs": [
@@ -308,7 +382,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            9
+            11
           ],
           "slot_index": 0
         }
@@ -320,53 +394,14 @@
     },
     {
       "id": 14,
-      "type": "Heal360Seam",
+      "type": "SimpleHeightmapNormalizer",
       "pos": [
-        1160,
+        1120,
         200
       ],
       "size": [
         280,
-        100
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 9
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            10
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "Heal360Seam"
-      },
-      "widgets_values": [
-        0.05
-      ],
-      "title": "Heal 360 Seam \u2014 Blender-Toolbox"
-    },
-    {
-      "id": 15,
-      "type": "SaveFakeHDRI",
-      "pos": [
-        1160,
-        360
-      ],
-      "size": [
-        280,
-        160
+        80
       ],
       "flags": {},
       "order": 12,
@@ -375,53 +410,307 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 10
+          "link": 11
         }
       ],
       "outputs": [
         {
-          "name": "full_path",
-          "type": "STRING",
+          "name": "IMAGE",
+          "type": "IMAGE",
           "links": [
-            11
+            12,
+            13
           ],
           "slot_index": 0
         }
       ],
       "properties": {
-        "Node name for S&R": "SaveFakeHDRI"
+        "Node name for S&R": "SimpleHeightmapNormalizer"
       },
-      "widgets_values": [
-        "GameAssetMake_Skydome",
-        2.0,
-        2.2
-      ],
-      "title": "Save HDRI (.exr) \u2014 Blender-Toolbox"
+      "widgets_values": [],
+      "title": "Normalize Heightmap - Blender-Toolbox"
     },
     {
-      "id": 9,
-      "type": "EnvironmentAssetExportNode",
+      "id": 15,
+      "type": "PreviewImage",
       "pos": [
-        1500,
-        200
+        1120,
+        340
       ],
       "size": [
-        380,
-        240
+        280,
+        260
       ],
       "flags": {},
-      "order": 6,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
-          "name": "image",
+          "name": "images",
           "type": "IMAGE",
-          "link": null
+          "link": 12
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "MaterialTexturePromptMaker",
+      "pos": [
+        480,
+        700
+      ],
+      "size": [
+        340,
+        170
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "description",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "description"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive_prompt",
+          "type": "STRING",
+          "links": [
+            15
+          ],
+          "slot_index": 0
         },
         {
-          "name": "file_path",
+          "name": "negative_prompt",
           "type": "STRING",
-          "link": 11
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaterialTexturePromptMaker"
+      },
+      "widgets_values": [
+        "Rock",
+        "mountain ground, grass and rock, seen from directly above"
+      ],
+      "title": "Ground Texture Prompt - Blender-Toolbox"
+    },
+    {
+      "id": 21,
+      "type": "CLIPTextEncode",
+      "pos": [
+        860,
+        700
+      ],
+      "size": [
+        280,
+        90
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 14
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 15,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Ground texture positive"
+    },
+    {
+      "id": 22,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        860,
+        830
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            19
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ]
+    },
+    {
+      "id": 23,
+      "type": "KSampler",
+      "pos": [
+        1160,
+        700
+      ],
+      "size": [
+        280,
+        250
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 16
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 17
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 18
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        0,
+        "randomize",
+        8,
+        1.0,
+        "euler",
+        "simple",
+        1.0
+      ]
+    },
+    {
+      "id": 24,
+      "type": "VAEDecode",
+      "pos": [
+        1160,
+        990
+      ],
+      "size": [
+        200,
+        60
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "TerrainMeshBuilderNode",
+      "pos": [
+        1460,
+        200
+      ],
+      "size": [
+        400,
+        280
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "heightmap",
+          "type": "IMAGE",
+          "link": 13
+        },
+        {
+          "name": "ground_texture",
+          "type": "IMAGE",
+          "link": 22
         }
       ],
       "outputs": [
@@ -429,33 +718,40 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            12
+            23
           ],
           "slot_index": 0
         },
         {
-          "name": "file_path",
+          "name": "mesh_path",
           "type": "STRING",
           "links": [],
           "slot_index": 1
+        },
+        {
+          "name": "heightmap16_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 2
         }
       ],
       "properties": {
-        "Node name for S&R": "EnvironmentAssetExportNode"
+        "Node name for S&R": "TerrainMeshBuilderNode"
       },
       "widgets_values": [
-        "skydome_hdri",
-        "Skydome_01",
-        1000.0,
-        200.0
+        "Terrain_01",
+        256,
+        500.0,
+        80.0,
+        1
       ],
-      "title": "\ud83c\udf0d Export Skydome for Engine"
+      "title": "Terrain Mesh Builder (walkable mesh + baked texture)"
     },
     {
       "id": 55,
       "type": "AssetPlacementManagerNode",
       "pos": [
-        1940,
+        1920,
         200
       ],
       "size": [
@@ -463,7 +759,7 @@
         260
       ],
       "flags": {},
-      "order": 13,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -474,12 +770,12 @@
         {
           "name": "terrain_manifest_json",
           "type": "STRING",
-          "link": null
+          "link": 23
         },
         {
           "name": "skydome_manifest_json",
           "type": "STRING",
-          "link": 12
+          "link": null
         },
         {
           "name": "extra_manifest_json",
@@ -492,7 +788,7 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            13
+            24
           ],
           "slot_index": 0
         },
@@ -517,40 +813,32 @@
         true,
         true
       ],
-      "title": "PLACEMENT MANAGER"
+      "title": "PLACEMENT MANAGER - verifies terrain world size"
     },
     {
       "id": 10,
-      "type": "UnrealEngineBridgeNode",
+      "type": "UnityEngineBridgeNode",
       "pos": [
-        2420,
+        2400,
         200
       ],
       "size": [
         400,
-        320
+        220
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "completed_3d_manifest_json",
           "type": "STRING",
-          "link": 13
-        },
-        {
-          "name": "unreal_project_content_dir",
-          "type": "STRING",
-          "link": null,
-          "widget": {
-            "name": "unreal_project_content_dir"
-          }
+          "link": 24
         }
       ],
       "outputs": [
         {
-          "name": "unreal_import_payload_json",
+          "name": "unity_import_payload_json",
           "type": "STRING",
           "links": [],
           "slot_index": 0
@@ -569,24 +857,20 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "UnrealEngineBridgeNode"
+        "Node name for S&R": "UnityEngineBridgeNode"
       },
       "widgets_values": [
         "127.0.0.1",
-        30010,
-        "HTTP Bridge Plugin (Port 30010)",
-        "/Game/Assets/AI_Generated/",
-        100.0,
-        true,
-        true,
-        ""
+        8080,
+        "Assets/AI_Generated/",
+        true
       ]
     },
     {
       "id": 11,
       "type": "EngineConnectionCheckNode",
       "pos": [
-        2420,
+        2400,
         620
       ],
       "size": [
@@ -594,7 +878,7 @@
         160
       ],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -615,11 +899,11 @@
         "Node name for S&R": "EngineConnectionCheckNode"
       },
       "widgets_values": [
-        "unreal",
+        "unity",
         "127.0.0.1",
-        30010
+        8080
       ],
-      "title": "Verify Unreal Bridge Is Running"
+      "title": "Verify Unity Bridge Is Running"
     }
   ],
   "links": [
@@ -649,6 +933,22 @@
     ],
     [
       4,
+      2,
+      0,
+      3,
+      1,
+      "STRING"
+    ],
+    [
+      5,
+      2,
+      1,
+      4,
+      1,
+      "STRING"
+    ],
+    [
+      6,
       3,
       0,
       6,
@@ -656,7 +956,7 @@
       "CONDITIONING"
     ],
     [
-      5,
+      7,
       4,
       0,
       6,
@@ -664,7 +964,7 @@
       "CONDITIONING"
     ],
     [
-      6,
+      8,
       5,
       0,
       6,
@@ -672,7 +972,7 @@
       "LATENT"
     ],
     [
-      7,
+      9,
       6,
       0,
       7,
@@ -680,7 +980,7 @@
       "LATENT"
     ],
     [
-      8,
+      10,
       13,
       0,
       7,
@@ -688,7 +988,7 @@
       "VAE"
     ],
     [
-      9,
+      11,
       7,
       0,
       14,
@@ -696,7 +996,7 @@
       "IMAGE"
     ],
     [
-      10,
+      12,
       14,
       0,
       15,
@@ -704,23 +1004,95 @@
       "IMAGE"
     ],
     [
-      11,
-      15,
+      13,
+      14,
       0,
       9,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
+      12,
+      0,
+      21,
+      0,
+      "CLIP"
+    ],
+    [
+      15,
+      20,
+      0,
+      21,
       1,
       "STRING"
     ],
     [
-      12,
+      16,
+      1,
+      0,
+      23,
+      0,
+      "MODEL"
+    ],
+    [
+      17,
+      21,
+      0,
+      23,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      4,
+      0,
+      23,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      19,
+      22,
+      0,
+      23,
+      3,
+      "LATENT"
+    ],
+    [
+      20,
+      23,
+      0,
+      24,
+      0,
+      "LATENT"
+    ],
+    [
+      21,
+      13,
+      0,
+      24,
+      1,
+      "VAE"
+    ],
+    [
+      22,
+      24,
+      0,
+      9,
+      1,
+      "IMAGE"
+    ],
+    [
+      23,
       9,
       0,
       55,
-      2,
+      1,
       "STRING"
     ],
     [
-      13,
+      24,
       55,
       0,
       10,
@@ -732,7 +1104,7 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Skydome 360 HDRI from Prompt (Unreal)",
+      "name": "Geekatplay GameAssetMake \u2014 Terrain Mesh from Description (Unity)",
       "author": "Geekatplay Studio \u2014 Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }

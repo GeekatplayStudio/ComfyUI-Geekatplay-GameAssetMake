@@ -32,11 +32,29 @@ namespace GeekatplayGameForge
     }
 
     [Serializable]
+    public class GameForgeSun
+    {
+        public float azimuth_deg;
+        public float elevation_deg;
+        public float intensity = 1f;
+        public string color_hex;
+    }
+
+    [Serializable]
+    public class GameForgeEnvironment
+    {
+        public string season;
+        public string time_of_day;
+        public GameForgeSun sun;
+    }
+
+    [Serializable]
     public class GameForgePayload
     {
         public string target_assets_folder;
         public bool auto_instantiate;
         public List<GameForgeAsset> assets;
+        public GameForgeEnvironment environment;
     }
 
     [InitializeOnLoad]
@@ -129,6 +147,7 @@ namespace GeekatplayGameForge
 
             var importedAssetPaths = new List<string>();
             var assetMeta = new List<GameForgeAsset>();
+            var environmentAssets = new List<KeyValuePair<string, GameForgeAsset>>();
 
             foreach (var asset in payload.assets)
             {
@@ -146,6 +165,22 @@ namespace GeekatplayGameForge
                 string destFile = idPrefix + safeName + ext;
                 string destAbs = Path.Combine(absTarget, destFile);
                 File.Copy(asset.model_path, destAbs, true);
+
+                bool isImage = ext.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+                               ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                               ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                               ext.Equals(".exr", StringComparison.OrdinalIgnoreCase) ||
+                               ext.Equals(".hdr", StringComparison.OrdinalIgnoreCase) ||
+                               ext.Equals(".tga", StringComparison.OrdinalIgnoreCase);
+
+                if (isImage)
+                {
+                    // Environment images (skydome HDRI / heightmap / textures) are
+                    // handled after the AssetDatabase refresh below, not instantiated.
+                    environmentAssets.Add(new KeyValuePair<string, GameForgeAsset>(
+                        targetFolder + "/" + destFile, asset));
+                    continue;
+                }
 
                 if (ext.Equals(".glb", StringComparison.OrdinalIgnoreCase) ||
                     ext.Equals(".gltf", StringComparison.OrdinalIgnoreCase))
@@ -225,9 +260,118 @@ namespace GeekatplayGameForge
                     }
                     Undo.RegisterCreatedObjectUndo(instance, "GameForge Import");
                 }
+
+                // Environment: skydome -> skybox, sun -> directional light
+                foreach (var kv in environmentAssets)
+                {
+                    SetupEnvironmentAsset(kv.Key, kv.Value, targetFolder);
+                }
+                if (payload.environment != null && payload.environment.sun != null)
+                {
+                    SetupSun(payload.environment);
+                }
+            }
+            else if (environmentAssets.Count > 0)
+            {
+                Debug.Log($"[Geekatplay GameAssetMake] Imported {environmentAssets.Count} environment " +
+                          "asset(s) as project assets only (scene setup toggle is off).");
             }
 
-            Debug.Log($"[Geekatplay GameForge] Imported {importedAssetPaths.Count} asset(s) into {targetFolder}");
+            Debug.Log($"[Geekatplay GameAssetMake] Imported {importedAssetPaths.Count} mesh(es) and " +
+                      $"{environmentAssets.Count} environment asset(s) into {targetFolder}");
+        }
+
+        /// <summary>
+        /// Sets up an imported environment image in the scene:
+        /// skydome HDRI -> panoramic skybox material assigned to RenderSettings,
+        /// terrain heightmap -> logged with instructions (Unity Terrain needs RAW),
+        /// texture -> left as a project asset.
+        /// </summary>
+        private static void SetupEnvironmentAsset(string assetPath, GameForgeAsset asset, string targetFolder)
+        {
+            string category = asset.category ?? "";
+
+            if (category == "skydome" || category == "skydome_hdri")
+            {
+                var tex = AssetDatabase.LoadAssetAtPath<Texture>(assetPath);
+                if (tex == null)
+                {
+                    Debug.LogWarning($"[Geekatplay GameAssetMake] Could not load skydome texture at {assetPath}");
+                    return;
+                }
+
+                var shader = Shader.Find("Skybox/Panoramic");
+                if (shader == null)
+                {
+                    Debug.LogWarning("[Geekatplay GameAssetMake] Shader 'Skybox/Panoramic' not found — " +
+                                     "cannot build the skybox material automatically.");
+                    return;
+                }
+
+                string matPath = $"{targetFolder}/M_{Path.GetFileNameWithoutExtension(assetPath)}_Skybox.mat";
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+                if (mat == null)
+                {
+                    mat = new Material(shader);
+                    AssetDatabase.CreateAsset(mat, matPath);
+                }
+                mat.shader = shader;
+                mat.SetTexture("_MainTex", tex);
+                mat.SetFloat("_Mapping", 1f);        // Latitude-Longitude layout
+                mat.SetFloat("_ImageType", 0f);      // 360 degrees
+                EditorUtility.SetDirty(mat);
+                AssetDatabase.SaveAssets();
+
+                RenderSettings.skybox = mat;
+                DynamicGI.UpdateEnvironment();
+                Debug.Log($"[Geekatplay GameAssetMake] Skydome applied to the scene skybox ({matPath}).");
+            }
+            else if (category == "terrain")
+            {
+                Debug.Log($"[Geekatplay GameAssetMake] Heightmap imported at {assetPath}. " +
+                          "For a native Unity Terrain use Terrain > Import Raw with the 16-bit source, " +
+                          "or use the terrain MESH workflow which places walkable geometry automatically.");
+            }
+        }
+
+        /// <summary>
+        /// Positions/configures a directional light from the Scene Director's
+        /// season and time-of-day sun data (azimuth 0 = North, clockwise).
+        /// </summary>
+        private static void SetupSun(GameForgeEnvironment env)
+        {
+            try
+            {
+                var sun = env.sun;
+                Light light = null;
+                foreach (var l in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+                {
+                    if (l.type == LightType.Directional) { light = l; break; }
+                }
+                if (light == null)
+                {
+                    var go = new GameObject("Sun");
+                    light = go.AddComponent<Light>();
+                    light.type = LightType.Directional;
+                    Undo.RegisterCreatedObjectUndo(go, "GameAssetMake Sun");
+                }
+
+                // Unity: rotate so the light shines FROM the sun azimuth/elevation.
+                light.transform.rotation = Quaternion.Euler(sun.elevation_deg, sun.azimuth_deg + 180f, 0f);
+                light.intensity = Mathf.Max(0.1f, sun.intensity / 5f);   // Unreal lux -> Unity relative
+                if (!string.IsNullOrEmpty(sun.color_hex) &&
+                    ColorUtility.TryParseHtmlString(sun.color_hex, out Color c))
+                {
+                    light.color = c;
+                }
+                light.gameObject.name = $"Sun_{env.season}_{env.time_of_day}";
+                Debug.Log($"[Geekatplay GameAssetMake] Sun set: {env.season} {env.time_of_day} " +
+                          $"az={sun.azimuth_deg} el={sun.elevation_deg} {sun.color_hex}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Geekatplay GameAssetMake] Sun setup failed: {ex.Message}");
+            }
         }
     }
 }

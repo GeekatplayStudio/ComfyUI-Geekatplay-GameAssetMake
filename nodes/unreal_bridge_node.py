@@ -22,7 +22,12 @@ class UnrealEngineBridgeNode:
                 "communication_mode": (["HTTP Bridge Plugin (Port 30010)", "Python Remote Socket", "JSON Manifest File Sync"], {"default": "HTTP Bridge Plugin (Port 30010)"}),
                 "target_content_folder": ("STRING", {"default": "/Game/Assets/AI_Generated/"}),
                 "unit_scale_factor": ("FLOAT", {"default": 100.0, "min": 0.01, "max": 10000.0, "step": 1.0}),
-                "auto_place_in_level": ("BOOLEAN", {"default": True}),
+                # Master toggle: assets only land in the Content Browser, or are
+                # also placed/set up in the level (meshes spawned, skydome applied,
+                # terrain positioned, sun light configured).
+                "auto_place_in_level": ("BOOLEAN", {"default": True,
+                    "label_on": "Import + Set Up In Scene",
+                    "label_off": "Import As Assets Only"}),
                 "auto_generate_collisions": ("BOOLEAN", {"default": True}),
             },
             "optional": {

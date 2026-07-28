@@ -1,6 +1,6 @@
 {
-  "last_node_id": 15,
-  "last_link_id": 14,
+  "last_node_id": 55,
+  "last_link_id": 24,
   "nodes": [
     {
       "id": 1,
@@ -22,7 +22,8 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            1
+            1,
+            16
           ],
           "slot_index": 0
         }
@@ -57,7 +58,8 @@
           "type": "CLIP",
           "links": [
             2,
-            3
+            3,
+            14
           ],
           "slot_index": 0
         }
@@ -92,7 +94,8 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            10
+            10,
+            21
           ],
           "slot_index": 0
         }
@@ -157,7 +160,7 @@
         "None",
         "Grayscale (Heightmap)"
       ],
-      "title": "Terrain Prompt (from description) \u2014 Blender-Toolbox"
+      "title": "Terrain Prompt (from description) - Blender-Toolbox"
     },
     {
       "id": 3,
@@ -240,7 +243,8 @@
           "name": "CONDITIONING",
           "type": "CONDITIONING",
           "links": [
-            7
+            7,
+            18
           ],
           "slot_index": 0
         }
@@ -424,7 +428,7 @@
         "Node name for S&R": "SimpleHeightmapNormalizer"
       },
       "widgets_values": [],
-      "title": "Normalize Heightmap \u2014 Blender-Toolbox"
+      "title": "Normalize Heightmap - Blender-Toolbox"
     },
     {
       "id": 15,
@@ -454,27 +458,327 @@
       "widgets_values": []
     },
     {
+      "id": 20,
+      "type": "MaterialTexturePromptMaker",
+      "pos": [
+        480,
+        700
+      ],
+      "size": [
+        340,
+        170
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "description",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "description"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive_prompt",
+          "type": "STRING",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaterialTexturePromptMaker"
+      },
+      "widgets_values": [
+        "Rock",
+        "mountain ground, grass and rock, seen from directly above"
+      ],
+      "title": "Ground Texture Prompt - Blender-Toolbox"
+    },
+    {
+      "id": 21,
+      "type": "CLIPTextEncode",
+      "pos": [
+        860,
+        700
+      ],
+      "size": [
+        280,
+        90
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 14
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 15,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "title": "Ground texture positive"
+    },
+    {
+      "id": 22,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        860,
+        830
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            19
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ]
+    },
+    {
+      "id": 23,
+      "type": "KSampler",
+      "pos": [
+        1160,
+        700
+      ],
+      "size": [
+        280,
+        250
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 16
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 17
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 18
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        0,
+        "randomize",
+        8,
+        1.0,
+        "euler",
+        "simple",
+        1.0
+      ]
+    },
+    {
+      "id": 24,
+      "type": "VAEDecode",
+      "pos": [
+        1160,
+        990
+      ],
+      "size": [
+        200,
+        60
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
       "id": 9,
-      "type": "EnvironmentAssetExportNode",
+      "type": "TerrainMeshBuilderNode",
       "pos": [
         1460,
         200
       ],
       "size": [
-        380,
-        260
+        400,
+        280
       ],
       "flags": {},
       "order": 7,
       "mode": 0,
       "inputs": [
         {
-          "name": "image",
+          "name": "heightmap",
           "type": "IMAGE",
           "link": 13
         },
         {
-          "name": "file_path",
+          "name": "ground_texture",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "completed_3d_manifest_json",
+          "type": "STRING",
+          "links": [
+            23
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "mesh_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "heightmap16_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TerrainMeshBuilderNode"
+      },
+      "widgets_values": [
+        "Terrain_01",
+        256,
+        500.0,
+        80.0,
+        1
+      ],
+      "title": "Terrain Mesh Builder (walkable mesh + baked texture)"
+    },
+    {
+      "id": 55,
+      "type": "AssetPlacementManagerNode",
+      "pos": [
+        1920,
+        200
+      ],
+      "size": [
+        420,
+        260
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "assets_manifest_json",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "terrain_manifest_json",
+          "type": "STRING",
+          "link": 23
+        },
+        {
+          "name": "skydome_manifest_json",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "extra_manifest_json",
           "type": "STRING",
           "link": null
         }
@@ -484,33 +788,38 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "links": [
-            14
+            24
           ],
           "slot_index": 0
         },
         {
-          "name": "file_path",
+          "name": "placement_report",
           "type": "STRING",
           "links": [],
           "slot_index": 1
+        },
+        {
+          "name": "asset_count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
         }
       ],
       "properties": {
-        "Node name for S&R": "EnvironmentAssetExportNode"
+        "Node name for S&R": "AssetPlacementManagerNode"
       },
       "widgets_values": [
-        "terrain_heightmap",
-        "Terrain_01",
-        1000.0,
-        200.0
+        true,
+        true,
+        true
       ],
-      "title": "\ud83c\udf0d Export 16-bit Heightmap for Engine"
+      "title": "PLACEMENT MANAGER - verifies terrain world size"
     },
     {
       "id": 10,
       "type": "UnrealEngineBridgeNode",
       "pos": [
-        1900,
+        2400,
         200
       ],
       "size": [
@@ -524,7 +833,7 @@
         {
           "name": "completed_3d_manifest_json",
           "type": "STRING",
-          "link": 14
+          "link": 24
         },
         {
           "name": "unreal_project_content_dir",
@@ -573,7 +882,7 @@
       "id": 11,
       "type": "EngineConnectionCheckNode",
       "pos": [
-        1900,
+        2400,
         620
       ],
       "size": [
@@ -716,7 +1025,87 @@
     ],
     [
       14,
+      12,
+      0,
+      21,
+      0,
+      "CLIP"
+    ],
+    [
+      15,
+      20,
+      0,
+      21,
+      1,
+      "STRING"
+    ],
+    [
+      16,
+      1,
+      0,
+      23,
+      0,
+      "MODEL"
+    ],
+    [
+      17,
+      21,
+      0,
+      23,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      4,
+      0,
+      23,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      19,
+      22,
+      0,
+      23,
+      3,
+      "LATENT"
+    ],
+    [
+      20,
+      23,
+      0,
+      24,
+      0,
+      "LATENT"
+    ],
+    [
+      21,
+      13,
+      0,
+      24,
+      1,
+      "VAE"
+    ],
+    [
+      22,
+      24,
+      0,
       9,
+      1,
+      "IMAGE"
+    ],
+    [
+      23,
+      9,
+      0,
+      55,
+      1,
+      "STRING"
+    ],
+    [
+      24,
+      55,
       0,
       10,
       0,
@@ -727,7 +1116,7 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Terrain Heightmap from Description",
+      "name": "Geekatplay GameAssetMake \u2014 Terrain Mesh from Description (Unreal)",
       "author": "Geekatplay Studio \u2014 Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }

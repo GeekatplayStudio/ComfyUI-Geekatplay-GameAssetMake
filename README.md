@@ -29,6 +29,7 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
 - 🧊 **Multiple 3D Backends, cloud or local** — cloud: **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **HiTem3D**, chosen globally on the 3D Generator. Local: **Hunyuan3D 2.1** runs entirely on your own GPU — no API, no keys, no credits, nothing uploaded. Both paths feed the same engine bridges and show a results panel listing every generated model.
 - 🎨 **30+ Art Styles** — from Low Poly, Voxel, and PS1 Retro through Realistic PBR, Dark Fantasy, Cyberpunk, Toon/Cel Shaded, Chibi, Claymation, and more. Concepts are generated one object per image, 3/4 view to the camera, isolated on white — the framing image-to-3D APIs handle best.
+- 🎚️ **Import-only or import + scene setup** — one toggle on every exporter (Unreal and Unity). Off: assets just land in the project. On: meshes spawn at their coordinates, terrain is placed and size-verified, the **skydome becomes a real sky** (emissive sphere in Unreal, `RenderSettings.skybox` in Unity), and the sun light is configured. Applies to objects, terrain, and sky alike.
 - 📐 **Placement Manager** — the single authority for engine delivery: imports in the right order (terrain → sky → assets), normalizes every AI mesh to its intended real-world size by measuring its actual bounds in the engine, snaps asset Z onto the terrain heightfield, and nudges overlapping assets apart. One failing asset no longer aborts the batch.
 - 🔌 **Engine Connection Check** — a dedicated node (plus automatic pre-send verification in both bridges) confirms your Unreal/Unity editor bridge is installed, running, and reachable before you spend API credits.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
@@ -189,8 +190,8 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 |---|---|---|
 | `gameassetmake_unreal.json` | **Universal 3D asset pipeline** (pick Tripo3D / Meshy / HiTem3D on the 3D Generator) | Unreal Engine 5 |
 | `gameassetmake_unity.json` | Same universal pipeline | Unity |
-| `gameassetmake_terrain.json` | Terrain heightmap from description (16-bit PNG) | Unreal Engine 5 |
-| `gameassetmake_skydome.json` | 360° skydome HDRI (.exr, seam-healed) | Unreal Engine 5 |
+| `gameassetmake_terrain.json` / `_unity.json` | Walkable terrain **mesh** + ground texture, imported and placed | UE5 / Unity |
+| `gameassetmake_skydome.json` / `_unity.json` | 360° skydome HDRI, set up as sky sphere (UE) / skybox (Unity) | UE5 / Unity |
 | `gameassetmake_textures.json` | Seamless PBR material set (albedo/normal/roughness/metallic) | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** via Hunyuan3D 2.1 — no API, no keys, no credits | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |

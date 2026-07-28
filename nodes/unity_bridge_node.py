@@ -18,7 +18,16 @@ class UnityEngineBridgeNode:
                 "unity_host": ("STRING", {"default": "127.0.0.1"}),
                 "unity_port": ("INT", {"default": 8080, "min": 1024, "max": 65535}),
                 "target_assets_folder": ("STRING", {"default": "Assets/AI_Generated/"}),
-                "auto_instantiate_in_scene": ("BOOLEAN", {"default": True}),
+                # Master toggle: assets only land in the project, or are also
+                # set up in the open scene (prefabs instantiated, skybox applied,
+                # terrain positioned, sun light configured).
+                "auto_instantiate_in_scene": ("BOOLEAN", {"default": True,
+                    "label_on": "Import + Set Up In Scene",
+                    "label_off": "Import As Assets Only"}),
+            },
+            "optional": {
+                # Scene Director environment_json: sun az/el/color -> directional light
+                "environment_json": ("STRING", {"forceInput": True}),
             }
         }
 
@@ -34,7 +43,8 @@ class UnityEngineBridgeNode:
         unity_host="127.0.0.1",
         unity_port=8080,
         target_assets_folder="Assets/AI_Generated/",
-        auto_instantiate_in_scene=True
+        auto_instantiate_in_scene=True,
+        environment_json=""
     ):
         try:
             manifest = json.loads(completed_3d_manifest_json)
@@ -48,6 +58,12 @@ class UnityEngineBridgeNode:
             "auto_instantiate": auto_instantiate_in_scene,
             "assets": manifest
         }
+
+        if environment_json:
+            try:
+                payload["environment"] = json.loads(environment_json)
+            except Exception:
+                pass
 
         payload_str = json.dumps(payload, indent=2)
         success = False

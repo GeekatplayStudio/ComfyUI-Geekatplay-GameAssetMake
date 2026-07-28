@@ -521,14 +521,14 @@
     },
     {
       "id": 10,
-      "type": "UnrealEngineBridgeNode",
+      "type": "UnityEngineBridgeNode",
       "pos": [
         2420,
         200
       ],
       "size": [
         400,
-        320
+        220
       ],
       "flags": {},
       "order": 7,
@@ -538,19 +538,11 @@
           "name": "completed_3d_manifest_json",
           "type": "STRING",
           "link": 13
-        },
-        {
-          "name": "unreal_project_content_dir",
-          "type": "STRING",
-          "link": null,
-          "widget": {
-            "name": "unreal_project_content_dir"
-          }
         }
       ],
       "outputs": [
         {
-          "name": "unreal_import_payload_json",
+          "name": "unity_import_payload_json",
           "type": "STRING",
           "links": [],
           "slot_index": 0
@@ -569,17 +561,13 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "UnrealEngineBridgeNode"
+        "Node name for S&R": "UnityEngineBridgeNode"
       },
       "widgets_values": [
         "127.0.0.1",
-        30010,
-        "HTTP Bridge Plugin (Port 30010)",
-        "/Game/Assets/AI_Generated/",
-        100.0,
-        true,
-        true,
-        ""
+        8080,
+        "Assets/AI_Generated/",
+        true
       ]
     },
     {
@@ -615,11 +603,11 @@
         "Node name for S&R": "EngineConnectionCheckNode"
       },
       "widgets_values": [
-        "unreal",
+        "unity",
         "127.0.0.1",
-        30010
+        8080
       ],
-      "title": "Verify Unreal Bridge Is Running"
+      "title": "Verify Unity Bridge Is Running"
     }
   ],
   "links": [
@@ -732,7 +720,7 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Skydome 360 HDRI from Prompt (Unreal)",
+      "name": "Geekatplay GameAssetMake \u2014 Skydome 360 HDRI from Prompt (Unity)",
       "author": "Geekatplay Studio \u2014 Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }

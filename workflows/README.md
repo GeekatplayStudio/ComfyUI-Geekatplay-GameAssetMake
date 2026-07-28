@@ -9,8 +9,8 @@ Load via **Workflow → Open** or drag the `.json` onto the canvas.
 |---|---|---|
 | `gameassetmake_unreal.json` | **Universal 3D asset pipeline** — planner → concepts → guardrail → gallery → 3D models | Unreal Engine 5 (:30010) |
 | `gameassetmake_unity.json` | Same universal pipeline | Unity (:8080) |
-| `gameassetmake_terrain.json` | **Terrain heightmap** from a text description (16-bit PNG for Landscape/Terrain import) | Unreal Engine 5 |
-| `gameassetmake_skydome.json` | **360° skydome HDRI** (.exr, seam-healed equirectangular panorama) | Unreal Engine 5 |
+| `gameassetmake_terrain.json` / `_unity.json` | **Walkable terrain mesh** from a description — heightmap + matching ground texture, imported and placed | UE5 / Unity |
+| `gameassetmake_skydome.json` / `_unity.json` | **360° skydome HDRI** — set up as a sky sphere (UE) or scene skybox (Unity) | UE5 / Unity |
 | `gameassetmake_textures.json` | **Seamless PBR material** (albedo + normal + roughness + metallic) | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** — Hunyuan3D 2.1 on your GPU, no API/keys/credits | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
@@ -25,6 +25,17 @@ Type *"medieval village in a green valley"* into the **Scene Director** node and
 3. **Assets** — the director emits a positioned asset list (world x/y in meters, rotation yaw, per-asset scale — houses ring the well facing center, church at the edge, props scattered logically) that feeds the existing planner → per-asset concepts → **Gallery approval stop** (reject and re-queue until you like the set) → 3D generation → placed in Unreal at the exact layout coordinates and rotations.
 
 The gallery is the human-in-the-loop stop: nothing is spent on 3D generation until you approve. Re-queue with a different seed to redo any branch.
+
+### 🎚️ Import-only vs. import + scene setup
+
+Every exporter — Unreal **and** Unity — has one master toggle:
+
+| Toggle | Unreal (`auto_place_in_level`) | Unity (`auto_instantiate_in_scene`) |
+|---|---|---|
+| **Import + Set Up In Scene** | meshes spawned at their coordinates, terrain placed and size-verified, **skydome built as an emissive sky sphere**, sun DirectionalLight configured | prefabs instantiated, terrain placed, **skydome assigned as the scene skybox** (`RenderSettings.skybox`, panoramic material), sun directional light configured |
+| **Import As Assets Only** | everything lands in `/Game/Assets/AI_Generated/` — nothing touches your level | everything lands in `Assets/AI_Generated/` — nothing touches your scene |
+
+This applies to **all** asset kinds: objects, terrain, and skydome. The terrain and skydome workflows now route through the Placement Manager and a real bridge, so they import *and* set up exactly like the asset workflows do.
 
 ### 📐 Placement Manager — sizes and positions that actually match
 
