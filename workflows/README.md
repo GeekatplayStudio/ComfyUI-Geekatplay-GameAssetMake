@@ -35,7 +35,15 @@ The terrain colour map is generated **from the heightmap itself**, not from a se
 - **Area equalization** (`equalize`, default 0.8) — generated heightmaps are shaded reliefs with skewed histograms, so bands are spread by *area* instead of raw brightness. Without this, an absolute snow line turns half the map into a glacier.
 - **Optional tileable detail** — the generated PBR material can be multiplied over the top for surface grain without breaking alignment.
 
-The result is written **both** into the terrain `.glb` and as a separate `_color.png`. The engine importer builds an explicit **material** from that PNG and applies it to the terrain actor — exactly the pattern the skydome uses — because glTF import pipelines don't reliably surface an embedded texture.
+**Full PBR, not just colour.** The node outputs **albedo + normal + roughness + AO**:
+
+- **Normal map** is computed from the *actual heightfield* — mathematically exact, not inferred from a photo the way image-based extractors must. Choose **DirectX (Unreal)** or **OpenGL (Unity/glTF)** green-channel convention.
+- **Roughness** varies per material band (water smooth, rock and grass rough, snow softer).
+- **AO** comes from local cavity in the heightfield, darkening creases and valleys.
+
+All four maps are exported next to the mesh (`_color`, `_normal`, `_roughness`, `_ao`). The engine importer builds an explicit **PBR material** and applies it to the terrain actor — the same pattern the skydome uses, because glTF import pipelines don't reliably surface embedded textures. Crucially it also sets the **texture settings correctly**: normal/roughness/AO are imported as *data* (sRGB off, normal-map compression), which is the classic mistake that makes PBR look wrong.
+
+**Optional: Ubisoft CHORD** for photo→PBR on tileable materials (not terrain — terrain has the real heightfield, which is better). It's a gated model: accept the licence at [huggingface.co/Ubisoft/ubisoft-laforge-chord](https://huggingface.co/Ubisoft/ubisoft-laforge-chord), then place `chord_v1.safetensors` in `ComfyUI/models/ubsoft_pbr/`. The companion Blender-Toolbox's **PBR Extractor** node then produces albedo/normal/roughness/metallic/depth from any image, and falls back to a procedural estimate when the model isn't installed.
 
 ### ☀️ Lighting in every workflow
 

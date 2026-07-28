@@ -73,6 +73,11 @@ class TerrainMeshBuilderNode:
             },
             "optional": {
                 "ground_texture": ("IMAGE",),
+                # Full PBR set (from the Terrain Texture node) — exported as
+                # separate maps and wired into a real material in the engine.
+                "normal_map": ("IMAGE",),
+                "roughness_map": ("IMAGE",),
+                "ao_map": ("IMAGE",),
             },
         }
 
@@ -83,7 +88,8 @@ class TerrainMeshBuilderNode:
     OUTPUT_NODE = True
 
     def build_terrain(self, heightmap, terrain_name="Terrain_01", grid_resolution=256,
-                      world_size_m=500.0, height_m=80.0, smooth_passes=1, ground_texture=None):
+                      world_size_m=500.0, height_m=80.0, smooth_passes=1, ground_texture=None,
+                      normal_map=None, roughness_map=None, ao_map=None):
         from PIL import Image as PILImage
         from comfy_extras.nodes_save_3d import save_glb
 
@@ -129,6 +135,18 @@ class TerrainMeshBuilderNode:
             texture_path = os.path.join(out_dir, f"{safe}_color.png")
             texture_image.save(texture_path)
 
+        def _save_map(tensor, suffix):
+            if tensor is None:
+                return ""
+            data = np.clip(tensor[0].cpu().numpy() * 255.0, 0, 255).astype(np.uint8)
+            path = os.path.join(out_dir, f"{safe}_{suffix}.png")
+            PILImage.fromarray(data[..., :3], mode="RGB").save(path)
+            return path
+
+        normal_path = _save_map(normal_map, "normal")
+        roughness_path = _save_map(roughness_map, "roughness")
+        ao_path = _save_map(ao_map, "ao")
+
         mesh_path = os.path.join(out_dir, f"{safe}.glb")
         save_glb(vertices, faces, mesh_path, {}, uvs=uvs,
                  vertex_colors=None, texture_image=texture_image, unlit=False)
@@ -154,6 +172,9 @@ class TerrainMeshBuilderNode:
             "generation_status": "TERRAIN_MESH_OK",
             "heightmap16_path": png16_path,
             "texture_path": texture_path,
+            "normal_path": normal_path,
+            "roughness_path": roughness_path,
+            "ao_path": ao_path,
             "terrain_world_size_m": world_size_m,
             "terrain_height_m": height_m,
         }]

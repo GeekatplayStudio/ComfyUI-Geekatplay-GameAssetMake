@@ -98,6 +98,11 @@ class TerrainTextureFromHeightmapNode:
                                               "tooltip": "Blend amount for the optional tileable detail texture."}),
                 "detail_tiling": ("INT", {"default": 8, "min": 1, "max": 64,
                                           "tooltip": "How many times the detail texture repeats across the terrain."}),
+                "normal_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 8.0, "step": 0.1,
+                                             "tooltip": "Surface relief in the normal map."}),
+                "normal_format": (["DirectX (Unreal)", "OpenGL (Unity/glTF)"],
+                                  {"default": "DirectX (Unreal)",
+                                   "tooltip": "Green channel direction. Unreal expects DirectX."}),
                 "equalize": ("FLOAT", {"default": 0.8, "min": 0.0, "max": 1.0, "step": 0.05,
                                        "tooltip": "Spread the bands by AREA rather than raw brightness. "
                                                   "Generated heightmaps are shaded reliefs with skewed "
@@ -109,15 +114,16 @@ class TerrainTextureFromHeightmapNode:
             },
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("terrain_texture",)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE")
+    RETURN_NAMES = ("terrain_texture", "normal_map", "roughness_map", "ao_map")
     FUNCTION = "build_texture"
     CATEGORY = "Geekatplay GameAssetMake/Environment"
 
     def build_texture(self, heightmap, season="summer", resolution=1024,
                       slope_rock_strength=1.0, snow_line=0.88,
-                      detail_strength=0.35, detail_tiling=8, equalize=0.8,
-                      detail_texture=None):
+                      detail_strength=0.35, detail_tiling=8,
+                      normal_strength=1.0, normal_format="DirectX (Unreal)",
+                      equalize=0.8, detail_texture=None):
         from PIL import Image
 
         # --- heightfield, resampled to the texture resolution ---
@@ -181,10 +187,41 @@ class TerrainTextureFromHeightmapNode:
         cavity = np.clip(1.0 - (field - field.mean()) * 0.35, 0.85, 1.15)[..., None]
         color = np.clip(color * cavity, 0.0, 1.0)
 
-        snow_pct = 100.0 * float((snow_amt > 0.05).mean())
-        print(f"[GameAssetMake Terrain Texture] {resolution}x{resolution} {season} map built "
-              f"from the heightfield (slope rock x{slope_rock_strength}, snow line {line:.2f} "
-              f"-> {snow_pct:.1f}% snow cover, equalize {equalize})")
+        # ---------------------------------------------------------------
+        # PBR maps. The normal map is computed from the ACTUAL heightfield,
+        # so it is mathematically exact rather than inferred from a photo.
+        # ---------------------------------------------------------------
+        # gradients in texel space, scaled by relief strength
+        nx = -gx * 8.0 * float(normal_strength)
+        ny = -gy * 8.0 * float(normal_strength)
+        nz = np.ones_like(nx)
+        length = np.sqrt(nx * nx + ny * ny + nz * nz)
+        nx, ny, nz = nx / length, ny / length, nz / length
+        if normal_format.startswith("DirectX"):
+            ny = -ny          # Unreal expects green-down
+        normal = np.stack([nx * 0.5 + 0.5, ny * 0.5 + 0.5, nz * 0.5 + 0.5], axis=-1)
 
-        tensor = torch.from_numpy(color.astype(np.float32))[None, ]
-        return (tensor,)
+        # Roughness per material band: water smooth, snow soft, rock/grass rough
+        rough = np.full_like(field, 0.85, dtype=np.float32)
+        rough = np.where(band_field < 0.06, 0.12, rough)                 # water
+        rough = np.where(band_field > 0.82, 0.78, rough)                 # rock
+        rough = rough * (1.0 - snow_amt[..., 0] * 0.35)                  # snow is smoother
+        rough = np.clip(rough + (slope - 0.5) * 0.08, 0.05, 1.0)
+        roughness = np.repeat(rough[..., None], 3, axis=2)
+
+        # Ambient occlusion from local cavity: field vs a blurred field
+        pad = np.pad(field, 2, mode="edge")
+        blur = (pad[:-4, 2:-2] + pad[4:, 2:-2] + pad[2:-2, :-4] + pad[2:-2, 4:] +
+                pad[2:-2, 2:-2]) / 5.0
+        ao = np.clip(0.5 + (field - blur) * 6.0, 0.35, 1.0).astype(np.float32)
+        ao_map = np.repeat(ao[..., None], 3, axis=2)
+
+        snow_pct = 100.0 * float((snow_amt > 0.05).mean())
+        print(f"[GameAssetMake Terrain Texture] {resolution}x{resolution} {season} PBR set built "
+              f"from the heightfield: albedo + normal ({normal_format.split()[0]}) + roughness + AO "
+              f"(slope rock x{slope_rock_strength}, {snow_pct:.1f}% snow, equalize {equalize})")
+
+        def to_tensor(a):
+            return torch.from_numpy(np.clip(a, 0.0, 1.0).astype(np.float32))[None, ]
+
+        return (to_tensor(color), to_tensor(normal), to_tensor(roughness), to_tensor(ao_map))

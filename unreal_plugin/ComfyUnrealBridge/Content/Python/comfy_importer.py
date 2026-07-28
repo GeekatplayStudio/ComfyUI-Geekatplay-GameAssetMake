@@ -324,11 +324,41 @@ def _setup_sun(editor_actor_subsystem, environment):
         return False
 
 
+def _import_map(asset_tools, path, env_folder, name, kind):
+    """
+    Imports a PBR map and applies the correct texture settings. Getting these
+    wrong is the classic PBR mistake: normal/roughness/AO are DATA, not colour,
+    so they must not be sRGB-decoded, and normals need normal-map compression.
+    """
+    if not path or not os.path.exists(path):
+        return None
+    _import_file(asset_tools, path, env_folder, name)
+    tex = _find_texture(env_folder, name)
+    if tex is None:
+        unreal.log_warning(f"[GameAssetMake] Could not locate imported {kind} map '{name}'.")
+        return None
+    try:
+        if kind == "normal":
+            tex.set_editor_property("srgb", False)
+            tex.set_editor_property("compression_settings",
+                                    unreal.TextureCompressionSettings.TC_NORMALMAP)
+            tex.set_editor_property("flip_green_channel", False)
+        elif kind in ("roughness", "ao"):
+            tex.set_editor_property("srgb", False)
+            tex.set_editor_property("compression_settings",
+                                    unreal.TextureCompressionSettings.TC_MASKS)
+        unreal.EditorAssetLibrary.save_loaded_asset(tex)
+    except Exception as exc:
+        unreal.log_warning(f"[GameAssetMake] Could not set {kind} texture settings: {exc}")
+    return tex
+
+
 def _apply_terrain_material(asset_tools, editor_actor_subsystem, actor, asset, env_folder):
     """
-    Imports the terrain colour map and applies it as a real material on the
-    terrain actor - the same explicit approach used for the skydome, because
-    glTF imports do not reliably surface the embedded texture.
+    Builds a real PBR material for the terrain from the maps generated off the
+    heightfield (base colour, normal, roughness, AO) and applies it to the actor
+    - the same explicit approach used for the skydome, because glTF imports do
+    not reliably surface embedded textures.
     """
     texture_path = asset.get("texture_path")
     if not texture_path:
@@ -340,14 +370,17 @@ def _apply_terrain_material(asset_tools, editor_actor_subsystem, actor, asset, e
         return False
 
     name = asset.get("name", "Terrain").replace(" ", "_")
-    tex_name = f"T_{name}_Color"
     try:
-        _import_file(asset_tools, texture_path, env_folder, tex_name)
-        texture = _find_texture(env_folder, tex_name)
-        if texture is None:
-            unreal.log_error(f"[GameAssetMake] Imported terrain colour map but could not "
-                             f"locate the texture asset in {env_folder}.")
+        base_tex = _import_map(asset_tools, texture_path, env_folder, f"T_{name}_Color", "color")
+        if base_tex is None:
+            unreal.log_error("[GameAssetMake] Terrain colour map imported but not found as a texture.")
             return False
+        normal_tex = _import_map(asset_tools, asset.get("normal_path"),
+                                 env_folder, f"T_{name}_Normal", "normal")
+        rough_tex = _import_map(asset_tools, asset.get("roughness_path"),
+                                env_folder, f"T_{name}_Rough", "roughness")
+        ao_tex = _import_map(asset_tools, asset.get("ao_path"),
+                             env_folder, f"T_{name}_AO", "ao")
 
         mat_name = f"M_{name}_Terrain"
         mat_path = f"{env_folder.rstrip('/')}/{mat_name}"
@@ -366,21 +399,54 @@ def _apply_terrain_material(asset_tools, editor_actor_subsystem, actor, asset, e
             mel.delete_all_material_expressions(material)
         except Exception:
             pass
-        sample = mel.create_material_expression(
+
+        base = mel.create_material_expression(
             material, unreal.MaterialExpressionTextureSample, -400, 0)
-        sample.set_editor_property("texture", texture)
-        mel.connect_material_property(sample, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
-        # terrain reads better fully rough and non-metallic
-        rough = mel.create_material_expression(
-            material, unreal.MaterialExpressionConstant, -400, 300)
-        rough.set_editor_property("r", 0.92)
-        mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+        base.set_editor_property("texture", base_tex)
+        mel.connect_material_property(base, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+        wired = ["base colour"]
+
+        if normal_tex is not None:
+            n = mel.create_material_expression(
+                material, unreal.MaterialExpressionTextureSample, -400, 300)
+            n.set_editor_property("texture", normal_tex)
+            n.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
+            mel.connect_material_property(n, "RGB", unreal.MaterialProperty.MP_NORMAL)
+            wired.append("normal")
+
+        if rough_tex is not None:
+            r = mel.create_material_expression(
+                material, unreal.MaterialExpressionTextureSample, -400, 600)
+            r.set_editor_property("texture", rough_tex)
+            r.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)
+            mel.connect_material_property(r, "R", unreal.MaterialProperty.MP_ROUGHNESS)
+            wired.append("roughness")
+        else:
+            rough_const = mel.create_material_expression(
+                material, unreal.MaterialExpressionConstant, -400, 600)
+            rough_const.set_editor_property("r", 0.92)
+            mel.connect_material_property(rough_const, "", unreal.MaterialProperty.MP_ROUGHNESS)
+
+        if ao_tex is not None:
+            a = mel.create_material_expression(
+                material, unreal.MaterialExpressionTextureSample, -400, 900)
+            a.set_editor_property("texture", ao_tex)
+            a.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)
+            mel.connect_material_property(a, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
+            wired.append("AO")
+
+        # terrain is never metallic
+        metal = mel.create_material_expression(
+            material, unreal.MaterialExpressionConstant, -400, 1200)
+        metal.set_editor_property("r", 0.0)
+        mel.connect_material_property(metal, "", unreal.MaterialProperty.MP_METALLIC)
+
         mel.recompile_material(material)
         unreal.EditorAssetLibrary.save_asset(mat_path)
 
         actor.static_mesh_component.set_material(0, material)
-        unreal.log(f"[GameAssetMake] Terrain material applied: {mat_path} "
-                   f"(texture {texture.get_name()})")
+        unreal.log(f"[GameAssetMake] Terrain PBR material applied: {mat_path} "
+                   f"({', '.join(wired)})")
         return True
     except Exception as exc:
         unreal.log_error(f"[GameAssetMake] Terrain material step failed: {exc}")
