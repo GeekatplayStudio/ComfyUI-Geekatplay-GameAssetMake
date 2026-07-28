@@ -13,7 +13,7 @@ Load any of these via **Workflow → Open** (or drag-and-drop the `.json` onto t
 
 Each workflow contains the full pipeline:
 
-**🎮 Asset Planner → SDXL concept generation → 🖼️ Gallery Approval → 🧊 3D Generator → ⚡/📦 Engine Bridge**
+**🎮 Asset Planner → Flux concept generation → 🖼️ Gallery Approval → 🧊 3D Generator → 🔌 Connection Check → ⚡/📦 Engine Bridge**
 
 Every workflow also includes a **🔌 Engine Connection Check** node that verifies your Unreal/Unity editor bridge is installed and reachable each time you queue — it shows a green **ONLINE** / red **OFFLINE** badge right on the node.
 

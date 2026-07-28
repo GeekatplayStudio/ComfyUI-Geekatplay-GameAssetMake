@@ -16,7 +16,7 @@ Created and maintained by **Vladimir Chopine** — [Geekatplay Studio](https://w
 
 > *"3D dungeon crawler with one hero, giant spiders, chests, wall torches, and stone pillars"*
 
-...and the pipeline breaks it into a structured inventory of 10–50 individual assets (heroes, enemies, weapons, props, structures), generates 2D concept art for each one, lets you review and approve them in an interactive gallery, sends the approved ones to **Tripo3D** or **Meshy** for image-to-3D generation (with PBR textures and auto-rigging), and finally delivers the finished `.FBX`/`.GLB` files straight into **Unreal Engine 5** or **Unity** — imported, materialed, collision-configured, and placed in your level/scene.
+...and the pipeline breaks it into a structured inventory of 10–50 individual assets (heroes, enemies, weapons, props, structures), generates one isolated concept image per asset, lets you review and approve them in an interactive gallery, sends the approved ones to **Tripo3D**, **Meshy**, or **Hitem3D** for image-to-3D generation (with PBR textures and auto-rigging), and finally delivers the finished `.FBX`/`.GLB` files straight into **Unreal Engine 5** or **Unity** — imported, materialed, collision-configured, and placed in your level/scene.
 
 It does **not** generate gameplay logic, levels, or code — it makes the **assets** that go into your game.
 
@@ -39,14 +39,18 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 ```mermaid
 flowchart TD
-    Prompt["Natural Language Prompt"] --> Planner["🎮 GameAssetMake Asset Planner\n(builds asset manifest)"]
-    Planner --> ConceptGen["2D Concept Sampler\n(SDXL / FLUX / SD3, etc.)"]
-    ConceptGen --> GalleryUI["🖼️ Asset Gallery & Approval UI\n(inspect, approve, pick 3D options)"]
-    GalleryUI -->|"approved assets"| Unified3D["🧊 Unified 3D Generator"]
+    Prompt["Natural Language Prompt"] --> Planner["🎮 GameAssetMake Asset Planner\n(builds asset manifest, 30+ art styles)"]
+    Planner --> ConceptGen["2D Concept Sampler\n(Flux recommended · SDXL / Z-Image also work)\none object · 3/4 view · isolated on white"]
+    ConceptGen --> GalleryUI["🖼️ Asset Gallery & Approval UI\n(inspect, approve, pick PBR/rigging)"]
+    GalleryUI -->|"approved assets"| Unified3D["🧊 Unified 3D Generator\n(engine chosen globally)"]
     Unified3D -->|"Tripo3D API"| Tripo["Tripo3D\nImage-to-3D · Quad Mesh · PBR · Auto-Rig"]
     Unified3D -->|"Meshy API"| Meshy["Meshy\nImage-to-3D · PBR Maps · Poly Targets"]
-    Tripo --> Models[".FBX / .GLB Models Downloaded Locally"]
+    Unified3D -->|"Hitem3D API"| Hitem["Hitem3D (experimental)\nImage-to-3D"]
+    Tripo --> Models[".FBX / .GLB Models\n+ results panel on the node"]
     Meshy --> Models
+    Hitem --> Models
+    Check["🔌 Engine Connection Check\n(verifies bridge is online)"] -.-> UnrealBridge
+    Check -.-> UnityBridge
     Models --> UnrealBridge["⚡ Unreal Engine Bridge"]
     Models --> UnityBridge["📦 Unity Engine Bridge"]
     UnrealBridge -->|"HTTP :30010"| UEPlugin["ComfyUnrealBridge Plugin"]
@@ -167,20 +171,21 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 | `gameassetmake_unity_tripo.json` | Unity | Tripo3D |
 | `gameassetmake_unity_meshy.json` | Unity | Meshy |
 
-Then just: pick your SDXL checkpoint on the loader node, add your API key on the 3D Generator, and queue. See [workflows/README.md](workflows/README.md) for details.
+Then just: pick your checkpoint on the loader node (Flux fp8 is preset and recommended; SDXL/Z-Image also work — adjust `cfg` accordingly), add your API key on the 3D Generator, and queue. See [workflows/README.md](workflows/README.md) for details.
 
 ---
 
 ## 🎮 Using the Pipeline
 
-1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick an `art_style`, and set `target_asset_count`. It outputs `asset_manifest_json` and `prompt_list_json`.
-2. **Generate 2D concepts** — feed `prompt_list_json` into any ComfyUI text-to-image sampler (SDXL, FLUX, SD3, etc.) as a batch, producing one concept image per asset.
+1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick one of 30+ `art_style` presets, and set `target_asset_count`. It outputs `asset_manifest_json` and `prompt_list_json` — prompts are built for **one object per image, 3/4 view to the camera, isolated on pure white**.
+2. **Generate 2D concepts** — feed `prompt_list_json` into a ComfyUI text-to-image sampler as a batch (**Flux recommended**; SDXL/Z-Image also work), producing one concept image per asset.
 3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**. (The 3D provider — Tripo3D / Meshy / Hitem3D — is set globally on the 3D Generator node, not per asset.)
-4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**. It submits cloud tasks, polls for completion, and downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`.
-5. **Deliver to your engine** — connect `completed_3d_manifest_json` to:
+4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**, pick your `engine`. It submits cloud tasks, polls for completion, downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`, and shows a results panel of every model returned by the API.
+5. **Verify the engine bridge** — drop a **🔌 GameAssetMake Engine Connection Check** node (or just rely on the bridge nodes' own pre-send check) to confirm Unreal/Unity is running and reachable before sending assets.
+6. **Deliver to your engine** — connect `completed_3d_manifest_json` to:
    - **⚡ Unreal Engine Bridge** (talks to `unreal_host:unreal_port`, default `127.0.0.1:30010`), and/or
    - **📦 Unity Engine Bridge** (talks to `unity_host:unity_port`, default `127.0.0.1:8080`).
-6. **Watch it land** — switch to your engine editor: models are imported, PBR materials built, collisions configured, unit scale applied, and actors/prefabs placed at the manifest's world coordinates.
+7. **Watch it land** — switch to your engine editor: models are imported, PBR materials built, collisions configured, unit scale applied, and actors/prefabs placed at the manifest's world coordinates.
 
 ---
 
@@ -188,6 +193,7 @@ Then just: pick your SDXL checkpoint on the loader node, add your API key on the
 
 | Symptom | Fix |
 |---|---|
+| Bridge shows OFFLINE on the Connection Check node | Confirm the target editor (Unreal or Unity) is actually open with the plugin/script installed and enabled; check `host`/`port` match; a firewall may be blocking localhost traffic. |
 | Unreal never receives assets | Confirm the Output Log shows the bridge listener started on `30010`; check the plugin is enabled under Edit → Plugins; make sure ComfyUI and Unreal are on the same host or set `unreal_host` correctly. |
 | Unity never receives assets | Port `8080` may already be in use — change `Port` in `ComfyUnityImporter.cs` and `unity_port` on the node to match; confirm the Console shows the listener started. |
 | Nodes don't show up in ComfyUI | Confirm the folder is directly inside `custom_nodes/` (not nested one level deeper) and restart ComfyUI; check the console for import errors. |
@@ -198,7 +204,8 @@ Then just: pick your SDXL checkpoint on the loader node, add your API key on the
 
 ## 🗺️ Roadmap
 
-- [ ] Additional 3D backends (Rodin, Hunyuan3D)
+- [ ] Additional 3D backends (Rodin, Hunyuan3D) — Hitem3D added (experimental)
+- [ ] Verify/finalize the Hitem3D endpoint against official API docs
 - [ ] In-gallery per-asset prompt re-roll
 - [ ] Direct Unreal Remote Control API material graph customization
 - [ ] Unity Addressables export mode
