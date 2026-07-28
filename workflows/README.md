@@ -12,8 +12,24 @@ Load via **Workflow → Open** or drag the `.json` onto the canvas.
 | `gameassetmake_terrain.json` | **Terrain heightmap** from a text description (16-bit PNG for Landscape/Terrain import) | Unreal Engine 5 |
 | `gameassetmake_skydome.json` | **360° skydome HDRI** (.exr, seam-healed equirectangular panorama) | Unreal Engine 5 |
 | `gameassetmake_textures.json` | **Seamless PBR material** (albedo + normal + roughness + metallic) | Unreal Engine 5 |
+| `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** — Hunyuan3D 2.1 on your GPU, no API/keys/credits | Unreal Engine 5 |
+| `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
 
 The 3D provider (**Tripo3D / Meshy / HiTem3D**) is one global `engine` choice on the 3D Generator node — no more per-provider workflow duplicates. Unity delivery for terrain/skydome/textures: swap the bridge node for the Unity one.
+
+## 🖥️ Local vs cloud 3D generation
+
+Two interchangeable ways to turn approved concepts into meshes — both feed the same engine bridges:
+
+| | Cloud (`gameassetmake_unreal/unity.json`) | Local (`gameassetmake_local_hunyuan3d_*.json`) |
+|---|---|---|
+| Provider | Tripo3D / Meshy / HiTem3D | **Hunyuan3D 2.1** on your own GPU |
+| API key | required | **none** |
+| Cost | consumes credits | free |
+| Output | `.FBX`/`.GLB`, PBR textures, auto-rigging | `.glb` geometry + vertex colors |
+| Privacy | images uploaded | nothing leaves your machine |
+
+The local workflow needs **`hunyuan_3d_v2.1.safetensors`** in `ComfyUI/models/checkpoints/` ([download](https://huggingface.co/Comfy-Org/hunyuan3D_2.1_repackaged/resolve/main/hunyuan_3d_v2.1.safetensors), ~7.4 GB). It loads through an `ImageOnlyCheckpointLoader` (MODEL / CLIP_VISION / VAE) into the **🖥️ Local 3D Generator**, which loops over every approved asset — CLIP-Vision encode → Hunyuan3D conditioning → KSampler (30 steps, cfg 5) → voxel decode → mesh → `.glb`. Rigging and PBR texture maps are cloud-only features; use the API workflow when you need those.
 
 ## 🔑 API keys — enter once, stored securely
 

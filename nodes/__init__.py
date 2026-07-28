@@ -10,6 +10,7 @@ from .unity_bridge_node import UnityEngineBridgeNode
 from .engine_check_node import EngineConnectionCheckNode
 from .asset_verify_node import SingleObjectGuardrailNode
 from .batch_concept_node import BatchConceptGeneratorNode
+from .local_hunyuan3d_node import LocalHunyuan3DGeneratorNode
 from .environment_export_node import EnvironmentAssetExportNode
 
 NODE_CLASS_MAPPINGS = {
@@ -21,6 +22,7 @@ NODE_CLASS_MAPPINGS = {
     "EngineConnectionCheckNode": EngineConnectionCheckNode,
     "SingleObjectGuardrailNode": SingleObjectGuardrailNode,
     "BatchConceptGeneratorNode": BatchConceptGeneratorNode,
+    "LocalHunyuan3DGeneratorNode": LocalHunyuan3DGeneratorNode,
     "EnvironmentAssetExportNode": EnvironmentAssetExportNode
 }
 
@@ -33,5 +35,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "EngineConnectionCheckNode": "🔌 GameAssetMake Engine Connection Check",
     "SingleObjectGuardrailNode": "🛡️ GameAssetMake Single-Object Guardrail (VLM)",
     "BatchConceptGeneratorNode": "🔁 GameAssetMake Batch Concept Generator (one image per asset)",
+    "LocalHunyuan3DGeneratorNode": "🖥️ GameAssetMake Local 3D Generator (Hunyuan3D 2.1 — no API)",
     "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)"
 }

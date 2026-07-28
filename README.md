@@ -26,7 +26,7 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 - 🧠 **Natural-Language Asset Planner** — one prompt becomes a full manifest of game-ready assets with names, categories, scale, collision shape, and world placement.
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
-- 🧊 **Multiple Cloud 3D Backends** — generate meshes with **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **Hitem3D** *(experimental)* — chosen globally on the 3D Generator node. A built-in results panel lists every model returned from the API with status and file path.
+- 🧊 **Multiple 3D Backends, cloud or local** — cloud: **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **HiTem3D**, chosen globally on the 3D Generator. Local: **Hunyuan3D 2.1** runs entirely on your own GPU — no API, no keys, no credits, nothing uploaded. Both paths feed the same engine bridges and show a results panel listing every generated model.
 - 🎨 **30+ Art Styles** — from Low Poly, Voxel, and PS1 Retro through Realistic PBR, Dark Fantasy, Cyberpunk, Toon/Cel Shaded, Chibi, Claymation, and more. Concepts are generated one object per image, 3/4 view to the camera, isolated on white — the framing image-to-3D APIs handle best.
 - 🔌 **Engine Connection Check** — a dedicated node (plus automatic pre-send verification in both bridges) confirms your Unreal/Unity editor bridge is installed, running, and reachable before you spend API credits.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
@@ -78,7 +78,8 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── batch_concept_node.py         # 🔁 Batch Concept Generator (one image per asset)
 │   ├── asset_verify_node.py          # 🛡️ Single-Object Guardrail (VLM + auto-retry)
 │   ├── environment_export_node.py    # 🌍 Terrain/Skydome/Texture export
-│   ├── unified_3d_node.py            # 🧊 Unified 3D Generator
+│   ├── unified_3d_node.py            # 🧊 Unified 3D Generator (cloud APIs)
+│   ├── local_hunyuan3d_node.py       # 🖥️ Local 3D Generator (Hunyuan3D 2.1)
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
 │   └── engine_check_node.py          # 🔌 Engine Connection Check
@@ -174,6 +175,8 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 | `gameassetmake_terrain.json` | Terrain heightmap from description (16-bit PNG) | Unreal Engine 5 |
 | `gameassetmake_skydome.json` | 360° skydome HDRI (.exr, seam-healed) | Unreal Engine 5 |
 | `gameassetmake_textures.json` | Seamless PBR material set (albedo/normal/roughness/metallic) | Unreal Engine 5 |
+| `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** via Hunyuan3D 2.1 — no API, no keys, no credits | Unreal Engine 5 |
+| `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
 
 Together: **full game assets from a single prompt** — 3D models, terrain, sky, and materials. All preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white.
 
