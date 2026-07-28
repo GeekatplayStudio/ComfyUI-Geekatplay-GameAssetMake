@@ -9,6 +9,7 @@ from .unreal_bridge_node import UnrealEngineBridgeNode
 from .unity_bridge_node import UnityEngineBridgeNode
 from .engine_check_node import EngineConnectionCheckNode
 from .asset_verify_node import SingleObjectGuardrailNode
+from .batch_concept_node import BatchConceptGeneratorNode
 from .environment_export_node import EnvironmentAssetExportNode
 
 NODE_CLASS_MAPPINGS = {
@@ -19,6 +20,7 @@ NODE_CLASS_MAPPINGS = {
     "UnityEngineBridgeNode": UnityEngineBridgeNode,
     "EngineConnectionCheckNode": EngineConnectionCheckNode,
     "SingleObjectGuardrailNode": SingleObjectGuardrailNode,
+    "BatchConceptGeneratorNode": BatchConceptGeneratorNode,
     "EnvironmentAssetExportNode": EnvironmentAssetExportNode
 }
 
@@ -30,5 +32,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "UnityEngineBridgeNode": "📦 GameAssetMake Unity Engine Bridge",
     "EngineConnectionCheckNode": "🔌 GameAssetMake Engine Connection Check",
     "SingleObjectGuardrailNode": "🛡️ GameAssetMake Single-Object Guardrail (VLM)",
+    "BatchConceptGeneratorNode": "🔁 GameAssetMake Batch Concept Generator (one image per asset)",
     "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)"
 }

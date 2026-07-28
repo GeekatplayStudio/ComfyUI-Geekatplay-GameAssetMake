@@ -23,9 +23,13 @@ Type a key into the 3D Generator once with `remember_keys` ON and it's stored in
 - **Tripo3D / Meshy**: single API key
 - **HiTem3D**: two keys, entered as one value: `AccessKey:SecretKey` (e.g. `ak_xxx:sk_xxx`)
 
-## 🛡️ Single-object guardrail (in the universal workflows)
+## 🔁 One image per asset (not one image of everything)
 
-Between concept generation and the approval gallery, the **Single-Object Guardrail** node verifies every image is **one object, isolated on white** (and for rigged characters: exactly one human/animal):
+The universal workflows use the **Batch Concept Generator**, which **loops over the planner's prompt list and renders one image per asset**, each with its own seed. This is essential: feeding the whole prompt list into a single `CLIPTextEncode` produces one combined prompt, so every image ends up containing every asset at once. The loop node encodes and samples each prompt separately, and reports progress per item in the console.
+
+## 🛡️ Single-object guardrail
+
+The Batch Concept Generator verifies each asset **as it is generated** (`verify_single_object`) and retries that item immediately if it fails — one object, isolated on white; for rigged characters, exactly one human/animal. A standalone **Single-Object Guardrail** node is also available if you generate concepts some other way. Checks performed:
 
 - **heuristic** — local blob analysis of the white background (free, instant)
 - **vlm** — cross-check by a local [Ollama](https://ollama.com) vision model (default `gemma3` at `http://127.0.0.1:11434`; if Ollama isn't running, the heuristic alone decides)
@@ -35,7 +39,7 @@ Between concept generation and the approval gallery, the **Single-Object Guardra
 
 1. **Models** — Z-Image Turbo (benchmarked best for isolated game-asset concepts, ~7.5 s/image on an RTX 3090): `UNETLoader` → `z_image_turbo_bf16.safetensors`, `CLIPLoader` (type `lumina2`) → `qwen_3_4b.safetensors`, `VAELoader` → `ae.safetensors`. Sampling preset: 8 steps @ cfg 1.0, 16-channel `EmptySD3LatentImage`.
 2. **Companion pack** — terrain, skydome, and texture workflows use nodes from [ComfyUI-Blender-Toolbox](https://github.com/GeekatplayStudio/ComfyUI_Blender_toolbox) (same author) — install it alongside this pack.
-3. **Batch size** — in the universal workflows, the latent batch (12) should match the planner's `target_asset_count`.
+3. **Batch size** — nothing to match: the Batch Concept Generator renders exactly as many images as the planner produced prompts (`target_asset_count`). Set the image size on the generator node itself.
 4. **Engine bridge** — ComfyUnrealBridge plugin (:30010) or ComfyUnityImporter.cs (:8080) running; the 🔌 Connection Check node shows ONLINE/OFFLINE.
 5. **dry_run_mock** is ON by default on the 3D Generator — flip it off to spend API credits.
 

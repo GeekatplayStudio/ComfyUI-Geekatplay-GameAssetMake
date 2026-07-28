@@ -75,6 +75,7 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── meshy_api.py                  # Meshy API client
 │   ├── hitem3d_api.py                # HiTem3D API client (two-key auth)
 │   ├── keystore.py                   # 🔑 Secure key storage (OS credential vault)
+│   ├── batch_concept_node.py         # 🔁 Batch Concept Generator (one image per asset)
 │   ├── asset_verify_node.py          # 🛡️ Single-Object Guardrail (VLM + auto-retry)
 │   ├── environment_export_node.py    # 🌍 Terrain/Skydome/Texture export
 │   ├── unified_3d_node.py            # 🧊 Unified 3D Generator
@@ -176,7 +177,7 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 
 Together: **full game assets from a single prompt** — 3D models, terrain, sky, and materials. All preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white.
 
-The universal workflows include the **🛡️ Single-Object Guardrail**: every concept image is verified (local heuristic + optional Ollama VLM) to contain exactly one object on white — one human/animal for rigged characters — and failures are regenerated automatically before you ever see them.
+The universal workflows use the **🔁 Batch Concept Generator**, which loops over the planner's prompts and renders **one image per asset** (each with its own seed), then verifies each is a single object on white — one human/animal for rigged characters — regenerating failures automatically before you ever see them.
 
 **API keys are entered once and stored in the OS credential vault** (Windows Credential Manager / macOS Keychain) — never in workflow JSON, so sharing a workflow never leaks a key. HiTem3D uses two keys entered as `AccessKey:SecretKey`. The terrain/skydome/texture workflows use nodes from the companion [ComfyUI-Blender-Toolbox](https://github.com/GeekatplayStudio/ComfyUI_Blender_toolbox) pack (same author) — install both. See [workflows/README.md](workflows/README.md) for details.
 
@@ -185,7 +186,7 @@ The universal workflows include the **🛡️ Single-Object Guardrail**: every c
 ## 🎮 Using the Pipeline
 
 1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick one of 30+ `art_style` presets, and set `target_asset_count`. It outputs `asset_manifest_json` and `prompt_list_json` — prompts are built for **one object per image, 3/4 view to the camera, isolated on pure white**.
-2. **Generate 2D concepts** — feed `prompt_list_json` into a ComfyUI text-to-image sampler as a batch (**Z-Image Turbo recommended** — fast and the best at honoring "single object, isolated on white"), producing one concept image per asset.
+2. **Generate 2D concepts** — feed `prompt_list_json` into the **🔁 Batch Concept Generator**, which loops over the prompts and renders one image per asset with per-item verification (**Z-Image Turbo recommended** — fast and the best at honoring "single object, isolated on white"). Don't wire the prompt list straight into a `CLIPTextEncode`: that collapses every asset into one prompt and every image then contains everything.
 3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**. (The 3D provider — Tripo3D / Meshy / Hitem3D — is set globally on the 3D Generator node, not per asset.)
 4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**, pick your `engine`. It submits cloud tasks, polls for completion, downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`, and shows a results panel of every model returned by the API.
 5. **Verify the engine bridge** — drop a **🔌 GameAssetMake Engine Connection Check** node (or just rely on the bridge nodes' own pre-send check) to confirm Unreal/Unity is running and reachable before sending assets.
