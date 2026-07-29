@@ -133,6 +133,11 @@ class UnrealEngineBridgeNode:
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     if resp.status == 200:
                         success = True
+                        try:
+                            body = resp.read().decode("utf-8", "replace")
+                            print(f"[Unreal Bridge] Unreal accepted the payload: {body}")
+                        except Exception:
+                            pass
             except Exception as err:
                 print(f"[Unreal Bridge HTTP] Connection status: {err}")
 

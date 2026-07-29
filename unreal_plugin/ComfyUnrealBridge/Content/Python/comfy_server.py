@@ -16,6 +16,9 @@ except ImportError:
 import comfy_importer
 
 SERVER_PORT = 30010
+# Printed at startup; comfy_importer is hot-reloaded per payload, but this
+# server module itself only updates on an editor restart.
+SERVER_VERSION = "2026.07.28b-hot-reload"
 _server_instance = None
 _pending_payloads = []
 
@@ -95,4 +98,5 @@ def start_bridge_server():
 
     if unreal:
         unreal.register_slate_post_tick_callback(process_pending_imports_on_tick)
-        unreal.log(f"[GameAssetMake Bridge] Listener server active on port {SERVER_PORT}")
+        unreal.log(f"[GameAssetMake Bridge] server v{SERVER_VERSION} active on port {SERVER_PORT} "
+                   f"(importer hot-reloads per payload)")

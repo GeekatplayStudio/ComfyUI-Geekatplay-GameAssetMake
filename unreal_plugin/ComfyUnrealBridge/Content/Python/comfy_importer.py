@@ -12,7 +12,7 @@ except ImportError:
 
 # Bump when the importer changes; printed on every payload so the log proves
 # which version actually ran (Unreal caches Python for the editor session).
-IMPORTER_VERSION = "2026.07.28-pbr-sky"
+IMPORTER_VERSION = "2026.07.28b-unique-sky"
 
 
 def _find_static_mesh(folder, name_hint):
@@ -134,10 +134,17 @@ def _reimport_clean(dest_folder, dest_name):
     path = f"{dest_folder.rstrip('/')}/{dest_name}"
     try:
         if unreal.EditorAssetLibrary.does_asset_exist(path):
-            unreal.EditorAssetLibrary.delete_asset(path)
-            unreal.log(f"[GameAssetMake] Removed stale asset {path} before re-import.")
+            ok = unreal.EditorAssetLibrary.delete_asset(path)
+            if ok:
+                unreal.log(f"[GameAssetMake] Removed stale asset {path} before re-import.")
+            else:
+                unreal.log_warning(f"[GameAssetMake] Stale asset {path} is still referenced "
+                                   f"and could NOT be deleted; a re-import may not refresh it.")
+            return bool(ok)
     except Exception as exc:
         unreal.log_warning(f"[GameAssetMake] Could not remove stale asset {path}: {exc}")
+        return False
+    return True
 
 
 def _import_file(asset_tools, source_path, dest_folder, dest_name, options=None):
@@ -545,18 +552,25 @@ def _process_one_asset(asset, asset_tools, editor_actor_subsystem,
 
     # ---- image-based environment assets --------------------------------
     if is_image:
-        _reimport_clean(env_folder, asset_name)
-        _import_file(asset_tools, source_path, env_folder, asset_name)
-        unreal.log(f"[GameAssetMake] Imported {category or 'texture'} '{asset_name}' -> {env_folder}")
+        # For skydomes, the ComfyUI render counter makes the SOURCE FILE unique
+        # every run — mirror that in the asset name so the material always binds
+        # a brand-new texture, even if a previous one is locked by references.
+        import_name = asset_name
+        if category in ("skydome", "skydome_hdri"):
+            stem = os.path.splitext(os.path.basename(source_path))[0]
+            import_name = "".join(c if (c.isalnum() or c == "_") else "_" for c in stem).strip("_") or asset_name
+        _reimport_clean(env_folder, import_name)
+        _import_file(asset_tools, source_path, env_folder, import_name)
+        unreal.log(f"[GameAssetMake] Imported {category or 'texture'} '{import_name}' -> {env_folder}")
         if category in ("skydome", "skydome_hdri"):
             if not auto_place:
                 unreal.log(f"[GameAssetMake] Skydome '{asset_name}' imported as an asset only "
                            f"(scene setup toggle is off).")
                 return 1
-            tex = _find_texture(env_folder, asset_name)
+            tex = _find_texture(env_folder, import_name)
             if tex is None:
                 unreal.log_error(
-                    f"[GameAssetMake] Skydome texture '{asset_name}' was NOT found in "
+                    f"[GameAssetMake] Skydome texture '{import_name}' was NOT found in "
                     f"{env_folder} after import, so no sky was built. The source file was "
                     f"{source_path}. Check the Content Browser for the imported texture.")
             else:
