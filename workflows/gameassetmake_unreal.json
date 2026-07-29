@@ -159,6 +159,7 @@
       "widgets_values": [
         "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit",
         12,
+        4,
         "Stylized Low Poly",
         0,
         "fixed",
@@ -305,7 +306,7 @@
         "Node name for S&R": "GalleryApprovalNode"
       },
       "widgets_values": [
-        "Approve All (Auto)",
+        "PAUSE for my approval",
         ""
       ]
     },

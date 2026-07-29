@@ -108,6 +108,32 @@ Type a key into the 3D Generator once with `remember_keys` ON and it's stored in
 
 The universal workflows use the **Batch Concept Generator**, which **loops over the planner's prompt list and renders one image per asset**, each with its own seed. This is essential: feeding the whole prompt list into a single `CLIPTextEncode` produces one combined prompt, so every image ends up containing every asset at once. The loop node encodes and samples each prompt separately, and reports progress per item in the console.
 
+## ⏸️ Pause, choose, continue — or start over
+
+The gallery now genuinely **stops the run** after the concept images (`approval_mode` = *PAUSE for my approval*, the default). Nothing downstream executes — no 3D generation, no API credits — until you decide:
+
+- **Approve & Continue** — only the assets you ticked go to 3D generation, with the rigging you chose per character.
+- **Regenerate Images** — rolls fresh seeds on the planner and concept generator and re-runs, so you start the concepts over.
+- **Select All / Deselect All**, plus per-group *all/none* buttons.
+
+Approvals are bound to the exact image batch they were made on. Regenerate, and the run **pauses again on the new images** rather than silently reusing your old choices.
+
+Prefer it automatic? Set `approval_mode` to *Approve All (Auto)*, or filter by group: *Approve Characters Only*, *Approve Environment Only*, *Approve Characters + Accessories*.
+
+## 🧱 Three asset groups
+
+Every asset is tagged with a group, and the gallery is organised by them:
+
+| Group | What it holds | Rigging |
+|---|---|---|
+| 👤 **Characters** | heroes, NPCs, enemies, bosses | auto-rig (biped / quadruped) |
+| 🎒 **Accessories** | rocks, candles, barrels, rockets, weapons, vehicles | none |
+| 🧱 **Environment** | modular **walls, floors, ceilings, stairs, doorways, corners, columns, archways** | none |
+
+The planner's `environment_pieces` control (default 4) decides how many modular level-geometry pieces to include. They're generated as **tileable kit pieces** with correct modular dimensions (a wall is 4 × 0.4 × 3 m, a floor tile 4 × 4 m) so they snap together in the engine, and each genre has its own kit — dungeon stone, ship hull panels, saloon timber, concrete, peeling plaster.
+
+Only characters can be rigged; the gallery hides rig options for everything else and the node enforces it server-side.
+
 ## 🛡️ Single-object guardrail
 
 The Batch Concept Generator verifies each asset **as it is generated** (`verify_single_object`) and retries that item immediately if it fails — one object, isolated on white; for rigged characters, exactly one human/animal. A standalone **Single-Object Guardrail** node is also available if you generate concepts some other way. Checks performed:

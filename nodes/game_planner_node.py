@@ -29,16 +29,71 @@ ART_STYLES = [
 ]
 
 # Category archetypes: rig, collision and a sensible real-world size (metres)
+# group: "character" (auto-riggable) | "accessory" (props) | "environment" (level geometry)
 CATEGORY_SPECS = {
-    "hero":             {"rig": "biped",     "collision": "capsule",  "size": [1.0, 1.0, 1.8]},
-    "npc":              {"rig": "biped",     "collision": "capsule",  "size": [1.0, 1.0, 1.8]},
-    "enemy":            {"rig": "quadruped", "collision": "box",      "size": [1.4, 1.4, 1.2]},
-    "boss":             {"rig": "biped",     "collision": "box",      "size": [3.0, 3.0, 3.5]},
-    "weapon":           {"rig": "none",      "collision": "box",      "size": [0.3, 0.3, 1.2]},
-    "vehicle":          {"rig": "none",      "collision": "box",      "size": [4.0, 2.0, 2.0]},
-    "structure":        {"rig": "none",      "collision": "box",      "size": [6.0, 6.0, 5.0]},
-    "environment_prop": {"rig": "none",      "collision": "box",      "size": [1.0, 1.0, 1.2]},
-    "interactable":     {"rig": "none",      "collision": "box",      "size": [0.8, 0.8, 0.8]},
+    "hero":             {"rig": "biped",     "collision": "capsule", "size": [1.0, 1.0, 1.8],  "group": "character"},
+    "npc":              {"rig": "biped",     "collision": "capsule", "size": [1.0, 1.0, 1.8],  "group": "character"},
+    "enemy":            {"rig": "quadruped", "collision": "box",     "size": [1.4, 1.4, 1.2],  "group": "character"},
+    "boss":             {"rig": "biped",     "collision": "box",     "size": [3.0, 3.0, 3.5],  "group": "character"},
+    "weapon":           {"rig": "none",      "collision": "box",     "size": [0.3, 0.3, 1.2],  "group": "accessory"},
+    "vehicle":          {"rig": "none",      "collision": "box",     "size": [4.0, 2.0, 2.0],  "group": "accessory"},
+    "environment_prop": {"rig": "none",      "collision": "box",     "size": [1.0, 1.0, 1.2],  "group": "accessory"},
+    "interactable":     {"rig": "none",      "collision": "box",     "size": [0.8, 0.8, 0.8],  "group": "accessory"},
+    "structure":        {"rig": "none",      "collision": "box",     "size": [6.0, 6.0, 5.0],  "group": "environment"},
+    # --- modular level-geometry kit (tiling pieces, group "environment") ---
+    "wall":             {"rig": "none",      "collision": "box",     "size": [4.0, 0.4, 3.0],  "group": "environment"},
+    "floor":            {"rig": "none",      "collision": "box",     "size": [4.0, 4.0, 0.3],  "group": "environment"},
+    "ceiling":          {"rig": "none",      "collision": "box",     "size": [4.0, 4.0, 0.3],  "group": "environment"},
+    "stairs":           {"rig": "none",      "collision": "complex", "size": [2.0, 4.0, 3.0],  "group": "environment"},
+    "doorway":          {"rig": "none",      "collision": "box",     "size": [2.0, 0.5, 3.0],  "group": "environment"},
+    "corner":           {"rig": "none",      "collision": "box",     "size": [4.0, 4.0, 3.0],  "group": "environment"},
+    "column":           {"rig": "none",      "collision": "box",     "size": [0.8, 0.8, 3.0],  "group": "environment"},
+    "archway":          {"rig": "none",      "collision": "box",     "size": [4.0, 0.6, 3.5],  "group": "environment"},
+}
+
+# Modular environment kits: tiling level geometry per genre. Prompts stress the
+# modular/tileable nature so the pieces snap together in the engine.
+ENV_KITS = {
+    "fantasy": [("Dungeon Wall Section", "wall", "carved stone block wall, flat straight section"),
+                ("Dungeon Floor Tile", "floor", "flagstone floor tile, flat square slab"),
+                ("Dungeon Ceiling Panel", "ceiling", "vaulted stone ceiling panel"),
+                ("Stone Staircase", "stairs", "straight stone staircase flight"),
+                ("Dungeon Doorway", "doorway", "arched stone doorway frame"),
+                ("Wall Corner Block", "corner", "stone wall corner section, 90 degree"),
+                ("Stone Column", "column", "carved stone support column"),
+                ("Stone Archway", "archway", "wide stone archway")],
+    "scifi":   [("Hull Wall Panel", "wall", "brushed metal hull wall panel with seams"),
+                ("Deck Floor Plate", "floor", "metal grating deck floor plate"),
+                ("Ceiling Duct Panel", "ceiling", "ship ceiling panel with conduits"),
+                ("Metal Stairway", "stairs", "industrial metal stair flight"),
+                ("Blast Door Frame", "doorway", "sci-fi sliding blast door frame"),
+                ("Corridor Corner", "corner", "corridor corner junction module"),
+                ("Support Strut", "column", "metal support strut column"),
+                ("Airlock Arch", "archway", "airlock archway module")],
+    "horror":  [("Cracked Plaster Wall", "wall", "peeling plaster wall section"),
+                ("Rotten Floorboards", "floor", "warped wooden floorboard tile"),
+                ("Water-Stained Ceiling", "ceiling", "damp stained ceiling panel"),
+                ("Creaking Staircase", "stairs", "old wooden staircase flight"),
+                ("Boarded Doorway", "doorway", "boarded-up doorway frame"),
+                ("Corridor Corner", "corner", "peeling wall corner section"),
+                ("Rusted Pillar", "column", "rusted iron support pillar"),
+                ("Broken Archway", "archway", "crumbling brick archway")],
+    "western": [("Timber Wall Section", "wall", "weathered plank wall section"),
+                ("Saloon Floorboards", "floor", "worn wooden floor tile"),
+                ("Wooden Ceiling Beam", "ceiling", "timber ceiling beam panel"),
+                ("Wooden Staircase", "stairs", "saloon wooden stair flight"),
+                ("Swinging Door Frame", "doorway", "saloon swinging door frame"),
+                ("Porch Corner", "corner", "timber porch corner section"),
+                ("Porch Post", "column", "wooden porch support post"),
+                ("Timber Archway", "archway", "wooden entrance archway")],
+    "modern":  [("Concrete Wall Panel", "wall", "smooth concrete wall section"),
+                ("Tiled Floor Slab", "floor", "ceramic tiled floor slab"),
+                ("Drop Ceiling Panel", "ceiling", "office drop ceiling tile"),
+                ("Concrete Stairs", "stairs", "concrete stair flight with railing"),
+                ("Office Doorway", "doorway", "modern door frame"),
+                ("Wall Corner Unit", "corner", "concrete wall corner section"),
+                ("Concrete Pillar", "column", "square concrete pillar"),
+                ("Entrance Archway", "archway", "modern entrance arch")],
 }
 
 # Genre-themed fill props, used only AFTER the prompt's own subjects are used.
@@ -332,6 +387,9 @@ class GameAssetPlannerNode:
                     "default": "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit"
                 }),
                 "target_asset_count": ("INT", {"default": 12, "min": 1, "max": 50, "step": 1}),
+                "environment_pieces": ("INT", {"default": 4, "min": 0, "max": 12, "step": 1,
+                    "tooltip": "Modular level geometry to include (walls, floors, ceilings, "
+                               "stairs, doorways, corners). 0 = props and characters only."}),
                 "art_style": (ART_STYLES, {"default": "Stylized Low Poly"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "use_ollama": ("BOOLEAN", {"default": True,
@@ -351,7 +409,7 @@ class GameAssetPlannerNode:
     CATEGORY = "Geekatplay GameAssetMake/Planner"
 
     def plan_assets(self, game_concept_prompt, target_asset_count, art_style, seed,
-                    use_ollama=True, llm_breakdown_json="",
+                    environment_pieces=4, use_ollama=True, llm_breakdown_json="",
                     ollama_url="http://127.0.0.1:11434", ollama_model="qwen2.5:7b"):
         rng = random.Random(seed)
 
@@ -365,14 +423,25 @@ class GameAssetPlannerNode:
                 pass
 
         # 2. Ollama designs the inventory from the concept, 3. else prompt-derived.
+        env_count = max(0, min(int(environment_pieces), target_asset_count))
+        subject_count = max(1, target_asset_count - env_count)
+
         plan = None
         if use_ollama:
-            print(f"[Asset Planner] Asking {ollama_model} to design {target_asset_count} "
+            print(f"[Asset Planner] Asking {ollama_model} to design {subject_count} "
                   f"assets for: {game_concept_prompt[:60]}...")
-            plan = ollama_asset_plan(game_concept_prompt, target_asset_count,
+            plan = ollama_asset_plan(game_concept_prompt, subject_count,
                                      art_style, ollama_url, ollama_model, seed)
         if not plan:
-            plan = deterministic_plan(game_concept_prompt, target_asset_count, seed)
+            plan = deterministic_plan(game_concept_prompt, subject_count, seed)
+
+        # Modular level geometry so the scene has walls/floors/ceilings to build with
+        if env_count:
+            kit = ENV_KITS.get(detect_genre(game_concept_prompt), ENV_KITS["fantasy"])
+            for name, cat, desc in kit[:env_count]:
+                plan.append({"name": name, "category": cat,
+                             "description": f"{desc}, modular tileable game kit piece"})
+            print(f"[Asset Planner] + {min(env_count, len(kit))} modular environment piece(s).")
 
         manifest = []
         for idx, entry in enumerate(plan[:target_asset_count], start=1):
@@ -386,9 +455,16 @@ class GameAssetPlannerNode:
                 "id": f"asset_{idx:02d}",
                 "name": entry["name"],
                 "category": cat,
-                "prompt": (f"single {subject}, one object only, 3/4 view facing the camera, "
-                           f"isolated on pure white background, {art_style} style 3D game "
-                           f"asset concept art, production ready, no text, no reference sheet"),
+                "asset_group": spec.get("group", "accessory"),
+                "prompt": (
+                    (f"single modular {subject}, one game-kit piece only, straight-on 3/4 view, "
+                     f"isolated on pure white background, {art_style} style 3D game asset, "
+                     f"flat clean edges so it tiles with neighbouring pieces, "
+                     f"no text, no reference sheet")
+                    if spec.get("group") == "environment" else
+                    (f"single {subject}, one object only, 3/4 view facing the camera, "
+                     f"isolated on pure white background, {art_style} style 3D game "
+                     f"asset concept art, production ready, no text, no reference sheet")),
                 "engine_target": "tripo",
                 "rig_type": spec["rig"],
                 "include_texture": True,

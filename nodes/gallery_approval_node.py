@@ -4,9 +4,33 @@
 # =============================================================
 import os
 import json
+import hashlib
 import numpy as np
 from PIL import Image
 import folder_paths
+
+try:
+    from comfy_execution.graph_utils import ExecutionBlocker
+except ImportError:      # older ComfyUI
+    ExecutionBlocker = None
+
+
+def batch_signature(images, manifest):
+    """
+    Identifies THIS set of concept images. When new images are generated the
+    signature changes, so a previous approval can never silently auto-pass a
+    fresh batch — you always review what you are actually looking at.
+    """
+    h = hashlib.sha1()
+    h.update(str(len(manifest)).encode())
+    h.update(str(tuple(images.shape)).encode())
+    arr = images.detach().cpu().numpy()
+    # a few deterministic samples are enough to fingerprint the batch cheaply
+    for i in range(arr.shape[0]):
+        frame = arr[i]
+        h.update(np.asarray([frame.mean(), frame.std(),
+                             frame[::7, ::7].sum()], dtype=np.float64).tobytes())
+    return h.hexdigest()[:16]
 
 GALLERY_SUBFOLDER = "geekatplay_gallery"
 
@@ -24,7 +48,15 @@ class GalleryApprovalNode:
             "required": {
                 "images": ("IMAGE",),
                 "asset_manifest_json": ("STRING", {"forceInput": True}),
-                "approval_mode": (["Approve All (Auto)", "Manual UI Selection", "Approve Characters Only"], {"default": "Approve All (Auto)"}),
+                "approval_mode": ([
+                    "PAUSE for my approval",
+                    "Approve All (Auto)",
+                    "Approve Characters Only",
+                    "Approve Environment Only",
+                    "Approve Characters + Accessories",
+                ], {"default": "PAUSE for my approval",
+                    "tooltip": "PAUSE stops the run after the concept images so you can pick "
+                               "what becomes 3D, what gets rigged, or regenerate."}),
             },
             "optional": {
                 "user_selection_override": ("STRING", {
@@ -89,6 +121,21 @@ class GalleryApprovalNode:
                   f"only the first {min(len(saved_image_paths), len(manifest))} will be used. "
                   f"Use the Batch Concept Generator (one image per asset) to keep these in sync.")
 
+        sig = batch_signature(images, manifest)
+        approved_sig = manual_override.get("__batch__") if manual_override else None
+        selections = {k: v for k, v in (manual_override or {}).items() if not k.startswith("__")}
+        # An approval only counts for the batch it was made on: regenerate the
+        # images and you review the NEW ones instead of being auto-passed.
+        has_approval = bool(selections) and approved_sig == sig
+
+        GROUP_MODES = {
+            "Approve Characters Only": ("character",),
+            "Approve Environment Only": ("environment",),
+            "Approve Characters + Accessories": ("character", "accessory"),
+        }
+        ENV_CATEGORIES = ("wall", "floor", "ceiling", "stairs", "doorway",
+                          "corner", "column", "archway", "structure")
+
         for idx, item in enumerate(manifest):
             if idx >= len(saved_image_paths):
                 print(f"[GameAssetMake Gallery] Skipping '{item.get('name', idx)}' — no concept image for it.")
@@ -98,15 +145,19 @@ class GalleryApprovalNode:
 
             item_copy = dict(item)
             item_copy["image_path"] = img_path
-
             item_id = item.get("id", f"asset_{idx:02d}")
+            group = item.get("asset_group") or (
+                "character" if item.get("category") in ("hero", "enemy", "boss", "npc")
+                else "environment" if item.get("category") in ENV_CATEGORIES
+                else "accessory")
+            item_copy["asset_group"] = group
 
-            # Data for the interactive web gallery (served via ComfyUI /view endpoint)
             gallery_items.append({
                 "id": item_id,
                 "name": item.get("name", item_id),
                 "category": item.get("category", ""),
-                "engine_target": item_copy.get("engine_target", "tripo"),
+                "asset_group": group,
+                "can_rig": group == "character",
                 "include_texture": item_copy.get("include_texture", True),
                 "include_rigging": item_copy.get("include_rigging", False),
                 "rig_type": item_copy.get("rig_type", "none"),
@@ -115,30 +166,52 @@ class GalleryApprovalNode:
                 "type": "temp",
             })
 
-            if manual_override and item_id in manual_override:
-                selection = manual_override[item_id]
-                if selection.get("approved", False):
-                    item_copy["engine_target"] = selection.get("engine_target", item_copy.get("engine_target", "tripo"))
-                    item_copy["include_texture"] = selection.get("include_texture", item_copy.get("include_texture", True))
-                    item_copy["include_rigging"] = selection.get("include_rigging", item_copy.get("include_rigging", False))
-                    item_copy["rig_type"] = selection.get("rig_type", item_copy.get("rig_type", "biped"))
-                    approved_manifest.append(item_copy)
-                    approved_paths.append(img_path)
-            else:
-                if approval_mode == "Approve All (Auto)":
-                    approved_manifest.append(item_copy)
-                    approved_paths.append(img_path)
-                elif approval_mode == "Approve Characters Only":
-                    if item_copy.get("category") in ["hero", "enemy", "boss", "npc"]:
-                        approved_manifest.append(item_copy)
-                        approved_paths.append(img_path)
-                else:  # Manual UI Selection with no UI feedback yet: approve first 5 as a preview batch
-                    if idx < min(5, len(manifest)):
-                        approved_manifest.append(item_copy)
-                        approved_paths.append(img_path)
+            if has_approval:
+                sel = selections.get(item_id)
+                if not sel or not sel.get("approved", False):
+                    continue
+                item_copy["include_texture"] = sel.get("include_texture", item_copy.get("include_texture", True))
+                item_copy["include_rigging"] = sel.get("include_rigging", item_copy.get("include_rigging", False))
+                item_copy["rig_type"] = sel.get("rig_type", item_copy.get("rig_type", "none"))
+                if group != "character":          # only characters can be rigged
+                    item_copy["include_rigging"], item_copy["rig_type"] = False, "none"
+                approved_manifest.append(item_copy)
+                approved_paths.append(img_path)
+            elif approval_mode == "Approve All (Auto)":
+                approved_manifest.append(item_copy)
+                approved_paths.append(img_path)
+            elif approval_mode in GROUP_MODES and group in GROUP_MODES[approval_mode]:
+                approved_manifest.append(item_copy)
+                approved_paths.append(img_path)
+
+        counts = {}
+        for gi in gallery_items:
+            counts[gi["asset_group"]] = counts.get(gi["asset_group"], 0) + 1
+        summary = ", ".join(f"{v} {k}" for k, v in sorted(counts.items())) or "nothing"
+
+        # ------------------------- the PAUSE -------------------------------
+        if approval_mode == "PAUSE for my approval" and not has_approval:
+            why = ("new concept images were generated"
+                   if selections and approved_sig != sig else "waiting for your selection")
+            print(f"[GameAssetMake Gallery] PAUSED — {why}. {len(gallery_items)} concept "
+                  f"image(s) ready ({summary}). Review them on the node, tick what should "
+                  f"become 3D (and what to rig), then press 'Approve & Continue'. "
+                  f"Press 'Regenerate Images' to redo the concepts instead.")
+            blocked = ExecutionBlocker(None) if ExecutionBlocker is not None else ""
+            return {
+                "ui": {"gallery_items": [gallery_items],
+                       "batch_signature": [sig],
+                       "awaiting_approval": [True]},
+                "result": (blocked, blocked, 0),
+            }
+
+        print(f"[GameAssetMake Gallery] {len(approved_manifest)}/{len(gallery_items)} approved "
+              f"({summary}) — continuing to 3D generation.")
 
         return {
-            "ui": {"gallery_items": [gallery_items]},
+            "ui": {"gallery_items": [gallery_items],
+                   "batch_signature": [sig],
+                   "awaiting_approval": [False]},
             "result": (
                 json.dumps(approved_manifest, indent=2),
                 json.dumps(approved_paths, indent=2),

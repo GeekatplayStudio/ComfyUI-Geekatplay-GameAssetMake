@@ -175,6 +175,49 @@
     font-weight: 400;
 }
 
+.gameassetmake-banner {
+    background: #3a2d10;
+    color: #ffcf6b;
+    border: 1px solid #7a5c1c;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.gameassetmake-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0 4px;
+    padding: 4px 6px;
+    background: #1a1c23;
+    border-left: 3px solid #4da6ff;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #cfd4e0;
+}
+
+.gameassetmake-group-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.gameassetmake-group-actions .comfy-unreal-btn {
+    padding: 2px 8px;
+    font-size: 11px;
+    background: #34394a;
+}
+
+.comfy-unreal-btn-regen {
+    background: #8a5a1e;
+}
+.comfy-unreal-btn-regen:hover {
+    background: #b0742a;
+}
+
 .gameassetmake-status-dot {
     width: 12px;
     height: 12px;

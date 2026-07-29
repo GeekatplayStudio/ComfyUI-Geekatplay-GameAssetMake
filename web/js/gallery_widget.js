@@ -18,27 +18,45 @@ function esc(s) {
     }[c]));
 }
 
-function renderCards(container, items) {
+const GROUP_LABELS = {
+    character: "👤 Characters (can be auto-rigged)",
+    accessory: "🎒 Accessories & props",
+    environment: "🧱 Environment kit (walls, floors, stairs…)",
+};
+const GROUP_ORDER = ["character", "accessory", "environment"];
+
+function renderCards(container, items, awaiting) {
     const list = container.querySelector("#gameforge-asset-list-container");
     if (!items || !items.length) {
         list.innerHTML = `<div style="font-size:12px; color:#888; text-align:center; padding:12px;">
-            No assets received. Queue the workflow to load concept images.</div>`;
+            No assets received. Queue the workflow to generate concept images.</div>`;
         return;
     }
 
-    list.innerHTML = items.map(item => {
-        const imgUrl = item.filename
-            ? api.apiURL(`/view?filename=${encodeURIComponent(item.filename)}&subfolder=${encodeURIComponent(item.subfolder || "")}&type=${encodeURIComponent(item.type || "temp")}`)
-            : "";
-        return `
-        <div class="comfy-unreal-asset-card" data-id="${esc(item.id)}">
-            ${imgUrl ? `<img class="comfy-unreal-thumb" src="${imgUrl}" alt="${esc(item.name)}">` : ""}
-            <div class="comfy-unreal-card-body">
-                <label class="comfy-unreal-card-title">
-                    <input type="checkbox" class="comfy-unreal-checkbox" checked>
-                    ${esc(item.name)} <span class="comfy-unreal-cat">(${esc(item.category)})</span>
-                </label>
-                <label><input type="checkbox" class="opt-texture" ${item.include_texture ? "checked" : ""}> PBR Texture</label>
+    const grouped = {};
+    for (const it of items) (grouped[it.asset_group || "accessory"] ||= []).push(it);
+
+    let html = "";
+    if (awaiting) {
+        html += `<div class="gameassetmake-banner">PAUSED — pick what becomes 3D, then press
+            <b>Approve &amp; Continue</b>. Nothing is generated or spent until you do.</div>`;
+    }
+
+    for (const g of GROUP_ORDER) {
+        const rows = grouped[g];
+        if (!rows || !rows.length) continue;
+        html += `<div class="gameassetmake-group" data-group="${g}">
+            <span>${GROUP_LABELS[g] || g} — ${rows.length}</span>
+            <span class="gameassetmake-group-actions">
+              <button class="comfy-unreal-btn" data-act="group-all" data-group="${g}">all</button>
+              <button class="comfy-unreal-btn" data-act="group-none" data-group="${g}">none</button>
+            </span></div>`;
+
+        html += rows.map(item => {
+            const imgUrl = item.filename
+                ? api.apiURL(`/view?filename=${encodeURIComponent(item.filename)}&subfolder=${encodeURIComponent(item.subfolder || "")}&type=${encodeURIComponent(item.type || "temp")}`)
+                : "";
+            const rigBlock = item.can_rig ? `
                 <label><input type="checkbox" class="opt-rigging" ${item.include_rigging ? "checked" : ""}> Auto-Rig</label>
                 <label>Rig:
                     <select class="opt-rigtype">
@@ -46,33 +64,48 @@ function renderCards(container, items) {
                         <option value="quadruped" ${item.rig_type === "quadruped" ? "selected" : ""}>Quadruped</option>
                         <option value="none" ${(!item.rig_type || item.rig_type === "none") ? "selected" : ""}>None</option>
                     </select>
-                </label>
-            </div>
-        </div>`;
-    }).join("");
+                </label>` : `<span class="comfy-unreal-cat">no rigging for this type</span>`;
+            return `
+            <div class="comfy-unreal-asset-card" data-id="${esc(item.id)}" data-group="${g}">
+                ${imgUrl ? `<img class="comfy-unreal-thumb" src="${imgUrl}" alt="${esc(item.name)}">` : ""}
+                <div class="comfy-unreal-card-body">
+                    <label class="comfy-unreal-card-title">
+                        <input type="checkbox" class="comfy-unreal-checkbox" checked>
+                        ${esc(item.name)} <span class="comfy-unreal-cat">(${esc(item.category)})</span>
+                    </label>
+                    <label><input type="checkbox" class="opt-texture" ${item.include_texture ? "checked" : ""}> PBR Texture</label>
+                    ${rigBlock}
+                </div>
+            </div>`;
+        }).join("");
+    }
+    list.innerHTML = html;
 }
 
 function updatePayload(node, container) {
     const cards = container.querySelectorAll(".comfy-unreal-asset-card");
-    const selectionMap = {};
+    const selectionMap = { __batch__: container.dataset.batchSignature || "" };
 
     cards.forEach(card => {
+        const rig = card.querySelector(".opt-rigging");
+        const rigType = card.querySelector(".opt-rigtype");
         selectionMap[card.dataset.id] = {
             approved: card.querySelector(".comfy-unreal-checkbox").checked,
             include_texture: card.querySelector(".opt-texture").checked,
-            include_rigging: card.querySelector(".opt-rigging").checked,
-            rig_type: card.querySelector(".opt-rigtype").value,
+            include_rigging: rig ? rig.checked : false,
+            rig_type: rigType ? rigType.value : "none",
         };
     });
 
     const payloadStr = JSON.stringify(selectionMap);
     container.dataset.payload = payloadStr;
-
     const overrideWidget = node.widgets?.find(w => w.name === "user_selection_override");
-    if (overrideWidget) {
-        overrideWidget.value = payloadStr;
-    }
+    if (overrideWidget) overrideWidget.value = payloadStr;
     return payloadStr;
+}
+
+function countChecked(container) {
+    return container.querySelectorAll(".comfy-unreal-checkbox:checked").length;
 }
 
 app.registerExtension({
@@ -90,6 +123,7 @@ app.registerExtension({
                 <div class="comfy-unreal-actions">
                     <button class="comfy-unreal-btn" data-act="all">Select All</button>
                     <button class="comfy-unreal-btn" data-act="none">Deselect All</button>
+                    <button class="comfy-unreal-btn comfy-unreal-btn-regen" data-act="regenerate">Regenerate Images</button>
                     <button class="comfy-unreal-btn comfy-unreal-btn-submit" data-act="approve">Approve &amp; Continue</button>
                 </div>
             </div>
@@ -112,12 +146,40 @@ app.registerExtension({
         widgetContainer.addEventListener("click", (ev) => {
             const act = ev.target?.dataset?.act;
             if (!act) return;
+
             if (act === "all" || act === "none") {
                 widgetContainer.querySelectorAll(".comfy-unreal-checkbox")
                     .forEach(cb => cb.checked = (act === "all"));
                 updatePayload(node, widgetContainer);
-            } else if (act === "approve") {
+
+            } else if (act === "group-all" || act === "group-none") {
+                const g = ev.target.dataset.group;
+                widgetContainer.querySelectorAll(`.comfy-unreal-asset-card[data-group="${g}"] .comfy-unreal-checkbox`)
+                    .forEach(cb => cb.checked = (act === "group-all"));
                 updatePayload(node, widgetContainer);
+
+            } else if (act === "approve") {
+                if (!countChecked(widgetContainer)) {
+                    alert("Nothing is selected. Tick at least one asset, or press "
+                          + "'Regenerate Images' to create new concepts.");
+                    return;
+                }
+                updatePayload(node, widgetContainer);
+                app.queuePrompt(0);
+
+            } else if (act === "regenerate") {
+                // Start the concepts over: clear the approval so the run pauses
+                // again on the NEW images, and roll fresh seeds upstream.
+                widgetContainer.dataset.payload = "";
+                const ow = node.widgets?.find(w => w.name === "user_selection_override");
+                if (ow) ow.value = "";
+                for (const n of app.graph._nodes) {
+                    if (n.comfyClass === "BatchConceptGeneratorNode" ||
+                        n.comfyClass === "GameAssetPlannerNode") {
+                        const seedW = n.widgets?.find(w => w.name === "seed");
+                        if (seedW) seedW.value = Math.floor(Math.random() * 0xffffffff);
+                    }
+                }
                 app.queuePrompt(0);
             }
         });
@@ -130,7 +192,9 @@ app.registerExtension({
             origOnExecuted?.apply(this, arguments);
             const items = message?.gallery_items?.[0];
             if (items) {
-                renderCards(widgetContainer, items);
+                widgetContainer.dataset.batchSignature = message?.batch_signature?.[0] || "";
+                const awaiting = !!(message?.awaiting_approval?.[0]);
+                renderCards(widgetContainer, items, awaiting);
                 updatePayload(node, widgetContainer);
             }
         };

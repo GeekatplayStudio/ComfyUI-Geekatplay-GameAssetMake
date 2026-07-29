@@ -347,6 +347,7 @@
       "widgets_values": [
         "(driven by Scene Director)",
         14,
+        0,
         "Stylized Low Poly",
         0,
         "fixed",
@@ -494,7 +495,7 @@
         "Node name for S&R": "GalleryApprovalNode"
       },
       "widgets_values": [
-        "Manual UI Selection",
+        "PAUSE for my approval",
         ""
       ],
       "title": "APPROVAL STOP - inspect, reject, re-run until good"
