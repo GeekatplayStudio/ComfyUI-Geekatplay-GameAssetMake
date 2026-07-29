@@ -244,7 +244,7 @@
         "euler",
         "simple",
         0,
-        "randomize",
+        "fixed",
         16,
         true,
         "heuristic+vlm",

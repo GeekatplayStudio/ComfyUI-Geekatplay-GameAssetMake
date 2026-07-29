@@ -131,6 +131,10 @@ The gallery now genuinely **stops the run** after the concept images (`approval_
 
 Approvals are bound to the exact image batch they were made on. Regenerate, and the run **pauses again on the new images** rather than silently reusing your old choices.
 
+**The concept generator's seed ships as `fixed` on purpose.** With `randomize`, every queue — including pressing *Approve & Continue* — rolls a new seed, regenerates different images, and the run pauses again on those instead of proceeding with the set you just approved. Fixed means ComfyUI reuses the cached images (continuing takes seconds, not minutes) and the run flows straight through to 3D. Use the **Regenerate Images** button when you actually want new concepts; it rolls the seeds for you.
+
+**`dry_run_mock` ships OFF in these workflows**, so approved assets really are generated and imported. Mock mode writes ~80-byte placeholder files which the bridges deliberately refuse to send to the engine — useful for testing the graph for free, but nothing arrives in Unreal. Turn it back on if you want a no-cost dry run.
+
 Prefer it automatic? Set `approval_mode` to *Approve All (Auto)*, or filter by group: *Approve Characters Only*, *Approve Environment Only*, *Approve Characters + Accessories*.
 
 ## 🧱 Three asset groups
