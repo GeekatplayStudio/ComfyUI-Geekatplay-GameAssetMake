@@ -45,6 +45,19 @@ All four maps are exported next to the mesh (`_color`, `_normal`, `_roughness`, 
 
 **Optional: Ubisoft CHORD** for photo→PBR on tileable materials (not terrain — terrain has the real heightfield, which is better). It's a gated model: accept the licence at [huggingface.co/Ubisoft/ubisoft-laforge-chord](https://huggingface.co/Ubisoft/ubisoft-laforge-chord), then place `chord_v1.safetensors` in `ComfyUI/models/ubsoft_pbr/`. The companion Blender-Toolbox's **PBR Extractor** node then produces albedo/normal/roughness/metallic/depth from any image, and falls back to a procedural estimate when the model isn't installed.
 
+### 🔍 High-resolution terrain
+
+Generated heightmaps come out of the diffusion model at ~1024px, which is far too coarse once it is stretched over hundreds of metres. The **🔍 Terrain Upscaler** raises it to game-engine resolution before anything else is derived from it:
+
+- **Lanczos resampling** — properly antialiased, no stair-stepping.
+- **Slope-masked fractal detail** — multi-octave micro-relief added *on slopes*, leaving valleys and plateaus smooth. This is what turns a 4× upscale into actual detail rather than a bigger blur.
+- **AI model path (optional)** — connect an `UPSCALE_MODEL` (4x-UltraSharp, RealESRGAN…) if you want its detail. Height data is not an image, so an ESRGAN's invented high-frequency texture becomes *spikes* in the mesh; the node therefore low-passes the result automatically. **Lanczos + fractal is the recommended default for geometry.**
+- Output is capped at **8192px**, the practical ceiling for engine textures and Unreal landscape sizes.
+
+Because everything downstream is derived from the upscaled heightfield, the colour, normal, roughness and AO maps all gain the same resolution. Defaults are now **4× upscale → 4096² PBR maps → 512² mesh grid** (523k tris). The **16-bit heightmap is exported at the full upscaled resolution** (not the mesh grid), so it is directly usable for a native `Mode → Landscape → Import from File`.
+
+Detail mostly comes from the **normal map**, so raise the texture resolution before pushing the mesh grid very high — a 4096² normal map on a 512² grid looks far better than the reverse and costs a fraction of the triangles.
+
 ### ☀️ Lighting in every workflow
 
 Every workflow that delivers to an engine includes a light source, because assets imported into a level with no light render black:

@@ -64,8 +64,11 @@ class TerrainMeshBuilderNode:
             "required": {
                 "heightmap": ("IMAGE",),
                 "terrain_name": ("STRING", {"default": "Terrain_01"}),
-                "grid_resolution": ("INT", {"default": 256, "min": 32, "max": 1024, "step": 32,
-                                            "tooltip": "Vertices per side. 256 = ~65k verts / 130k tris."}),
+                "grid_resolution": ("INT", {"default": 512, "min": 32, "max": 2048, "step": 32,
+                                            "tooltip": "Vertices per side. 512 = 262k verts / 523k tris; "
+                                                       "1024 = 1M verts / 2M tris. Detail mostly comes from "
+                                                       "the normal map, so raise the TEXTURE resolution "
+                                                       "before pushing this very high."}),
                 "world_size_m": ("FLOAT", {"default": 500.0, "min": 10.0, "max": 20000.0, "step": 10.0}),
                 "height_m": ("FLOAT", {"default": 80.0, "min": 0.5, "max": 5000.0, "step": 1.0}),
                 "smooth_passes": ("INT", {"default": 1, "min": 0, "max": 10,
@@ -97,9 +100,19 @@ class TerrainMeshBuilderNode:
         os.makedirs(out_dir, exist_ok=True)
         safe = str(terrain_name).strip().replace(" ", "_") or "Terrain"
 
-        # --- height field: grayscale, resampled to the grid resolution ---
+        # --- height field ---
+        PILImage.MAX_IMAGE_PIXELS = None
         arr = heightmap[0].cpu().numpy()
         gray = arr.mean(axis=2) if arr.ndim == 3 else arr
+
+        # Keep the source at FULL resolution for the 16-bit export: that file is
+        # for a native engine Landscape import, which wants every sample the
+        # upscaler produced — not the (much coarser) mesh grid.
+        full_field = gray.astype(np.float32)
+        f_lo, f_hi = float(full_field.min()), float(full_field.max())
+        if f_hi > f_lo:
+            full_field = (full_field - f_lo) / (f_hi - f_lo)
+
         img = PILImage.fromarray(np.clip(gray * 255.0, 0, 255).astype(np.uint8))
         img = img.resize((grid_resolution, grid_resolution), PILImage.LANCZOS)
         field = np.asarray(img).astype(np.float32) / 255.0
@@ -115,10 +128,12 @@ class TerrainMeshBuilderNode:
         if hi > lo:
             field = (field - lo) / (hi - lo)
 
-        # --- 16-bit PNG export (for manual UE Landscape import if preferred) ---
+        # --- 16-bit PNG export at FULL source resolution (native Landscape import) ---
         png16_path = os.path.join(out_dir, f"{safe}_heightmap16.png")
-        gray16 = np.clip(field * 65535.0, 0, 65535).astype(np.uint16)
+        gray16 = np.clip(full_field * 65535.0, 0, 65535).astype(np.uint16)
         PILImage.fromarray(gray16, mode="I;16").save(png16_path)
+        print(f"[GameAssetMake Terrain] 16-bit heightmap exported at "
+              f"{gray16.shape[1]}x{gray16.shape[0]} (mesh grid is {grid_resolution}).")
 
         # --- displaced mesh ---
         vertices, faces, uvs = build_terrain_mesh(field, world_size_m, height_m)

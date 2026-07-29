@@ -88,7 +88,9 @@ class TerrainTextureFromHeightmapNode:
             "required": {
                 "heightmap": ("IMAGE",),
                 "season": (list(SEASON_PALETTES.keys()), {"default": "summer"}),
-                "resolution": ("INT", {"default": 1024, "min": 256, "max": 4096, "step": 128}),
+                "resolution": ("INT", {"default": 2048, "min": 256, "max": 8192, "step": 256,
+                                       "tooltip": "Output map size. 2048-4096 suits most terrain; "
+                                                  "8192 is the practical engine ceiling."}),
                 "slope_rock_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0, "step": 0.05,
                                                   "tooltip": "How strongly steep faces turn to bare rock."}),
                 "snow_line": ("FLOAT", {"default": 0.88, "min": 0.0, "max": 1.0, "step": 0.01,

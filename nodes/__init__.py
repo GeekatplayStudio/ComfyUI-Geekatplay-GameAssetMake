@@ -13,6 +13,7 @@ from .batch_concept_node import BatchConceptGeneratorNode
 from .local_hunyuan3d_node import LocalHunyuan3DGeneratorNode
 from .terrain_mesh_node import TerrainMeshBuilderNode
 from .terrain_texture_node import TerrainTextureFromHeightmapNode
+from .terrain_upscale_node import TerrainUpscaleNode
 from .scene_director_node import SceneDirectorNode
 from .layout_map_node import LayoutMapPreviewNode
 from .placement_manager_node import AssetPlacementManagerNode
@@ -31,6 +32,7 @@ NODE_CLASS_MAPPINGS = {
     "LocalHunyuan3DGeneratorNode": LocalHunyuan3DGeneratorNode,
     "TerrainMeshBuilderNode": TerrainMeshBuilderNode,
     "TerrainTextureFromHeightmapNode": TerrainTextureFromHeightmapNode,
+    "TerrainUpscaleNode": TerrainUpscaleNode,
     "SceneDirectorNode": SceneDirectorNode,
     "LayoutMapPreviewNode": LayoutMapPreviewNode,
     "AssetPlacementManagerNode": AssetPlacementManagerNode,
@@ -50,6 +52,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LocalHunyuan3DGeneratorNode": "🖥️ GameAssetMake Local 3D Generator (Hunyuan3D 2.1 — no API)",
     "TerrainMeshBuilderNode": "⛰️ GameAssetMake Terrain Mesh Builder (heightmap → mesh)",
     "TerrainTextureFromHeightmapNode": "🎨 GameAssetMake Terrain Texture (from heightmap, aligned)",
+    "TerrainUpscaleNode": "🔍 GameAssetMake Terrain Upscaler (hi-res + antialiased)",
     "SceneDirectorNode": "🎬 GameAssetMake Scene Director (prompt → full scene plan)",
     "LayoutMapPreviewNode": "🗺️ GameAssetMake Layout Map (top-down placement preview)",
     "AssetPlacementManagerNode": "📐 GameAssetMake Placement Manager (order, scale, terrain snap)",
