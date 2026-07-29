@@ -1,10 +1,326 @@
+# =============================================================
+# Geekatplay GameAssetMake — Game Asset Planner
+# (c) Geekatplay Studio / Vladimir Chopine
+#
+# Turns a natural-language game concept into a structured asset
+# manifest. Assets are DERIVED FROM THE PROMPT: a local Ollama model
+# designs the inventory when available, otherwise a genre-aware
+# deterministic planner extracts the subjects you actually named and
+# fills out the rest from a matching themed pool.
+# =============================================================
 import json
 import random
+import re
+
+try:
+    import requests
+except ImportError:
+    requests = None
+
+ART_STYLES = [
+    "Low Poly", "Stylized Low Poly", "Flat-Shaded Low Poly", "Voxel",
+    "PS1 Retro Low Poly", "Pixel-Art 3D", "Realistic PBR", "Photorealistic Scan",
+    "Medieval Realism", "Military Realism", "Dark Fantasy", "High Fantasy",
+    "Horror Gothic", "Post-Apocalyptic", "Steampunk", "Cyberpunk", "Sci-Fi",
+    "Space Opera", "Hand-Painted Cartoon", "Toon / Cel Shaded", "Anime Stylized",
+    "Chibi", "Claymation / Stop Motion", "Casual Mobile", "Isometric RPG",
+    "Western Frontier", "Nordic Viking", "Ancient Egyptian", "Aztec / Mayan",
+    "Oriental / East Asian", "Watercolor Stylized", "Papercraft",
+]
+
+# Category archetypes: rig, collision and a sensible real-world size (metres)
+CATEGORY_SPECS = {
+    "hero":             {"rig": "biped",     "collision": "capsule",  "size": [1.0, 1.0, 1.8]},
+    "npc":              {"rig": "biped",     "collision": "capsule",  "size": [1.0, 1.0, 1.8]},
+    "enemy":            {"rig": "quadruped", "collision": "box",      "size": [1.4, 1.4, 1.2]},
+    "boss":             {"rig": "biped",     "collision": "box",      "size": [3.0, 3.0, 3.5]},
+    "weapon":           {"rig": "none",      "collision": "box",      "size": [0.3, 0.3, 1.2]},
+    "vehicle":          {"rig": "none",      "collision": "box",      "size": [4.0, 2.0, 2.0]},
+    "structure":        {"rig": "none",      "collision": "box",      "size": [6.0, 6.0, 5.0]},
+    "environment_prop": {"rig": "none",      "collision": "box",      "size": [1.0, 1.0, 1.2]},
+    "interactable":     {"rig": "none",      "collision": "box",      "size": [0.8, 0.8, 0.8]},
+}
+
+# Genre-themed fill props, used only AFTER the prompt's own subjects are used.
+GENRE_POOLS = {
+    "scifi": {
+        "keywords": ("sci-fi", "scifi", "science fiction", "space", "alien", "rocket",
+                     "spaceship", "starship", "robot", "android", "cyber", "laser",
+                     "futuristic", "planet", "mars", "orbital", "retro-futur"),
+        "hero": "Space Explorer",
+        "enemy": "Alien Creature",
+        "props": [("Landing Rocket", "vehicle", [4.0, 4.0, 12.0]),
+                  ("Supply Crate", "interactable", [1.0, 1.0, 1.0]),
+                  ("Antenna Array", "structure", [2.0, 2.0, 5.0]),
+                  ("Alien Rock Formation", "environment_prop", [2.5, 2.5, 3.0]),
+                  ("Plasma Rifle", "weapon", [0.2, 0.2, 1.1]),
+                  ("Habitat Dome", "structure", [8.0, 8.0, 4.0]),
+                  ("Fuel Barrel", "environment_prop", [0.8, 0.8, 1.2]),
+                  ("Control Console", "interactable", [1.4, 0.8, 1.2]),
+                  ("Solar Panel", "structure", [3.0, 0.3, 2.0]),
+                  ("Alien Plant", "environment_prop", [1.2, 1.2, 2.0])],
+    },
+    "fantasy": {
+        "keywords": ("fantasy", "dungeon", "medieval", "castle", "knight", "wizard",
+                     "dragon", "orc", "elf", "sword", "magic", "crawler"),
+        "hero": "Knight Hero",
+        "enemy": "Dungeon Creature",
+        "props": [("Treasure Chest", "interactable", [0.9, 0.6, 0.6]),
+                  ("Iron Sword", "weapon", [0.2, 0.2, 1.1]),
+                  ("Wall Torch", "environment_prop", [0.4, 0.4, 1.2]),
+                  ("Stone Pillar", "structure", [1.2, 1.2, 4.0]),
+                  ("Wooden Barrel", "environment_prop", [0.8, 0.8, 1.0]),
+                  ("Arched Door", "structure", [1.6, 0.4, 2.8]),
+                  ("Potion Flask", "interactable", [0.2, 0.2, 0.3]),
+                  ("Stone Altar", "interactable", [1.8, 1.2, 1.0]),
+                  ("Iron Gate", "structure", [2.0, 0.3, 2.6]),
+                  ("Old Oak Tree", "environment_prop", [3.0, 3.0, 7.0])],
+    },
+    "horror": {
+        "keywords": ("horror", "zombie", "haunted", "ghost", "creepy", "nightmare", "asylum"),
+        "hero": "Survivor",
+        "enemy": "Undead Creature",
+        "props": [("Rusted Gurney", "environment_prop", [2.0, 0.9, 0.9]),
+                  ("Flickering Lamp", "environment_prop", [0.4, 0.4, 1.6]),
+                  ("Boarded Window", "structure", [1.4, 0.2, 1.6]),
+                  ("Blood-Stained Chair", "environment_prop", [0.6, 0.6, 1.1]),
+                  ("Old Wheelchair", "environment_prop", [0.8, 1.0, 1.2]),
+                  ("Broken Piano", "environment_prop", [1.6, 0.8, 1.2]),
+                  ("Rusty Crowbar", "weapon", [0.1, 0.1, 0.9]),
+                  ("Cracked Mirror", "environment_prop", [1.0, 0.2, 1.8])],
+    },
+    "western": {
+        "keywords": ("western", "cowboy", "wild west", "saloon", "frontier", "desert town"),
+        "hero": "Gunslinger",
+        "enemy": "Outlaw",
+        "props": [("Saloon Building", "structure", [10.0, 8.0, 6.0]),
+                  ("Water Tower", "structure", [4.0, 4.0, 8.0]),
+                  ("Wooden Wagon", "vehicle", [3.5, 1.8, 2.0]),
+                  ("Hitching Post", "environment_prop", [2.0, 0.3, 1.2]),
+                  ("Revolver", "weapon", [0.3, 0.1, 0.2]),
+                  ("Cactus", "environment_prop", [1.0, 1.0, 2.5]),
+                  ("Whiskey Barrel", "environment_prop", [0.8, 0.8, 1.0]),
+                  ("Wanted Poster Board", "interactable", [1.2, 0.2, 2.0])],
+    },
+    "modern": {
+        "keywords": ("modern", "city", "urban", "street", "office", "school", "apartment"),
+        "hero": "Protagonist",
+        "enemy": "Hostile Figure",
+        "props": [("Street Lamp", "structure", [0.4, 0.4, 5.0]),
+                  ("Parked Car", "vehicle", [4.4, 1.9, 1.5]),
+                  ("Trash Bin", "environment_prop", [0.7, 0.7, 1.1]),
+                  ("Bus Stop Shelter", "structure", [3.0, 1.5, 2.6]),
+                  ("Park Bench", "environment_prop", [1.8, 0.7, 0.9]),
+                  ("Traffic Cone", "environment_prop", [0.4, 0.4, 0.7]),
+                  ("Vending Machine", "interactable", [1.0, 0.8, 1.9]),
+                  ("Fire Hydrant", "environment_prop", [0.4, 0.4, 0.8])],
+    },
+}
+
+# Words that describe STYLE rather than an object, stripped from subject phrases.
+_STYLE_WORDS = {
+    "3d", "2d", "game", "style", "styled", "art", "scene", "environment", "level",
+    "retro", "modern", "realistic", "stylized", "low", "poly", "lowpoly", "cartoon",
+    "dark", "bright", "detailed", "high", "quality", "concept", "with", "and", "the",
+    "a", "an", "of", "in", "on", "at", "for", "featuring", "including", "some",
+    "sci-fi", "scifi", "fantasy", "horror", "western", "cyberpunk", "steampunk",
+}
+
+# Words describing the SETTING or genre rather than an object you can model.
+_SETTING_WORDS = {
+    "crawler", "town", "city", "village", "world", "planet", "level", "map",
+    "setting", "adventure", "simulator", "shooter", "rpg", "platformer",
+    "roguelike", "survival", "sandbox", "arena", "dungeon", "wild", "west",
+    "environment", "landscape", "biome",
+}
+
+_CHARACTER_HINTS = ("girl", "woman", "man", "boy", "hero", "heroine", "pilot",
+                    "soldier", "warrior", "knight", "explorer", "captain", "pinup",
+                    "person", "character", "astronaut", "cowboy", "survivor")
+_CREATURE_HINTS = ("alien", "monster", "creature", "beast", "dragon", "spider",
+                   "zombie", "wolf", "insect", "worm", "slime")
+_VEHICLE_HINTS = ("rocket", "ship", "spaceship", "starship", "car", "truck", "tank",
+                  "wagon", "boat", "plane", "shuttle", "mech")
+_WEAPON_HINTS = ("sword", "gun", "rifle", "pistol", "blaster", "axe", "bow",
+                 "dagger", "spear", "hammer", "revolver")
+_STRUCTURE_HINTS = ("building", "house", "tower", "castle", "dome", "station",
+                    "base", "temple", "church", "wall", "gate", "bridge", "saloon")
+
+
+def detect_genre(prompt):
+    p = prompt.lower()
+    best, score = "fantasy", 0
+    for name, pool in GENRE_POOLS.items():
+        hits = sum(1 for k in pool["keywords"] if k in p)
+        if hits > score:
+            best, score = name, hits
+    return best if score else "fantasy"
+
+
+def classify_subject(phrase):
+    """
+    Category for a phrase from the prompt. The EARLIEST hint wins, because the
+    head noun leads: "rocket on the alien planet" is a rocket (vehicle), not an
+    alien (enemy) — matching by category order alone got that backwards.
+    """
+    p = phrase.lower()
+    best_cat, best_pos = "environment_prop", len(p) + 1
+    for cat, hints in (("hero", _CHARACTER_HINTS), ("enemy", _CREATURE_HINTS),
+                       ("vehicle", _VEHICLE_HINTS), ("weapon", _WEAPON_HINTS),
+                       ("structure", _STRUCTURE_HINTS)):
+        for h in hints:
+            pos = p.find(h)
+            if pos != -1 and pos < best_pos:
+                best_cat, best_pos = cat, pos
+    return best_cat
+
+
+def extract_subjects(prompt):
+    """
+    Pulls the concrete things the user actually named out of the prompt.
+    "Retro sci-fi, rocket on the alien planet, pinup girl in retro scifi suit"
+    -> [("Rocket", "rocket on the alien planet"),
+        ("Pinup Girl", "pinup girl in retro scifi suit")]
+
+    Returns (name, description): the name is trimmed at the first preposition so
+    a single ASSET is requested rather than a whole scene, while the description
+    keeps the full phrase for the image prompt.
+    """
+    parts = re.split(r"[,;.]| with | and | featuring ", prompt, flags=re.IGNORECASE)
+    subjects, seen = [], set()
+
+    for raw in parts:
+        phrase = raw.strip()
+        if not phrase:
+            continue
+        words = re.findall(r"[A-Za-z0-9'-]+", phrase)
+        # drop leading articles so we get "Hero", not "A Hero"
+        while words and words[0].lower() in ("a", "an", "the"):
+            words = words[1:]
+        if not words:
+            continue
+
+        meaningful = [w for w in words if w.lower() not in _STYLE_WORDS]
+        if not meaningful:
+            continue                      # pure style, e.g. "retro sci-fi"
+        # A phrase made only of SETTING words describes where the game happens,
+        # not an object: "3d dungeon crawler", "wild west town" are not assets.
+        # Genre keywords are deliberately NOT used here — they include real
+        # objects like "rocket" and "sword" that must survive.
+        if all(w.lower() in _SETTING_WORDS for w in meaningful):
+            continue
+
+        full = " ".join(words[:8]).strip()
+        head = re.split(r"\b(?:on|in|at|inside|near|under|over|beside|of)\b",
+                        full, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+        name = head if len(head) > 2 else full
+        key = name.lower()
+        if key and key not in seen:
+            seen.add(key)
+            subjects.append((name, full))
+    return subjects
+
+
+def title_case(text):
+    """
+    Readable asset name. LLMs often answer with 'PinupGirlSuit' or
+    'rocket_landing_pad'; split those before casing so the name (and the image
+    prompt built from it) reads as words rather than one mashed token.
+    """
+    text = re.sub(r"[_\-]+", " ", str(text)).strip()
+    text = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", text)      # camelCase -> camel Case
+    text = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", " ", text)    # HTTPServer -> HTTP Server
+    small = {"of", "the", "in", "on", "a", "an", "and"}
+    words = [w for w in text.split() if w]
+    return " ".join(w if w.isupper() and len(w) > 1
+                    else (w.capitalize() if (i == 0 or w.lower() not in small) else w.lower())
+                    for i, w in enumerate(words))
+
+
+def ollama_asset_plan(prompt, count, art_style, url, model, seed):
+    """Asks a local LLM to design the asset inventory. None on any failure."""
+    if requests is None:
+        return None
+    schema = [{"name": "short asset name", "category":
+               "hero|npc|enemy|boss|weapon|vehicle|structure|environment_prop|interactable",
+               "description": "short visual description of this single object"}]
+    ask = (f"You are a game art director. For the game concept: \"{prompt}\"\n"
+           f"List EXACTLY {count} individual 3D game assets that belong in it. "
+           f"Every asset must fit the concept's setting - do not invent unrelated items. "
+           f"Include the characters, vehicles and props the concept mentions. "
+           f"Reply ONLY with a JSON array matching: {json.dumps(schema)}")
+    try:
+        resp = requests.post(f"{url.rstrip('/')}/api/generate",
+                             json={"model": model, "prompt": ask, "stream": False,
+                                   "format": "json", "options": {"temperature": 0.5, "seed": seed}},
+                             timeout=(10, 600))
+        resp.raise_for_status()
+        text = resp.json().get("response", "")
+        start, end = text.find("["), text.rfind("]") + 1
+        if start < 0:                      # some models wrap it in an object
+            obj = json.loads(text[text.find("{"):text.rfind("}") + 1])
+            data = next((v for v in obj.values() if isinstance(v, list)), [])
+        else:
+            data = json.loads(text[start:end])
+        out = []
+        for item in data[:count]:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip()
+            if not name:
+                continue
+            cat = str(item.get("category", "environment_prop")).strip()
+            if cat not in CATEGORY_SPECS:
+                cat = classify_subject(name)
+            out.append({"name": title_case(name), "category": cat,
+                        "description": str(item.get("description", "")).strip()})
+        return out or None
+    except Exception as exc:
+        print(f"[Asset Planner] Ollama plan failed ({exc}); using the prompt-derived planner.")
+        return None
+
+
+def deterministic_plan(prompt, count, seed):
+    """Prompt-derived plan: your named subjects first, then genre-matched fill."""
+    rng = random.Random(seed)
+    genre = detect_genre(prompt)
+    pool = GENRE_POOLS[genre]
+    plan, used = [], set()
+
+    for name, description in extract_subjects(prompt):
+        if len(plan) >= count:
+            break
+        key = name.lower()
+        if key in used:
+            continue
+        used.add(key)
+        plan.append({"name": title_case(name),
+                     "category": classify_subject(description),
+                     "description": description})
+
+    # guarantee a playable character if the prompt implied one and none was found
+    if not any(p["category"] in ("hero", "npc") for p in plan) and len(plan) < count:
+        plan.append({"name": pool["hero"], "category": "hero", "description": pool["hero"]})
+
+    props = list(pool["props"])
+    rng.shuffle(props)
+    i = 0
+    while len(plan) < count:
+        name, cat, size = props[i % len(props)]
+        suffix = f" {i // len(props) + 2}" if i >= len(props) else ""
+        plan.append({"name": f"{name}{suffix}", "category": cat,
+                     "description": name, "size": size})
+        i += 1
+
+    print(f"[Asset Planner] Genre '{genre}' detected; "
+          f"{len(used)} subject(s) taken from your prompt, rest filled from the {genre} pool.")
+    return plan
+
 
 class GameAssetPlannerNode:
     """
-    Analyzes natural language game concept prompts and generates a structured game asset manifest.
-    Produces 2D concept generation prompts and metadata (scale, placement, category, collision).
+    Natural-language game concept -> structured asset manifest whose assets
+    actually match the concept (Ollama-designed, prompt-derived fallback).
     """
 
     @classmethod
@@ -13,61 +329,19 @@ class GameAssetPlannerNode:
             "required": {
                 "game_concept_prompt": ("STRING", {
                     "multiline": True,
-                    "default": "3d dungeon crawler, with one hero and spiders, dark fantasy style, stone dungeon environment"
+                    "default": "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit"
                 }),
-                "target_asset_count": ("INT", {
-                    "default": 12,
-                    "min": 1,
-                    "max": 50,
-                    "step": 1
-                }),
-                "art_style": ([
-                    "Low Poly",
-                    "Stylized Low Poly",
-                    "Flat-Shaded Low Poly",
-                    "Voxel",
-                    "PS1 Retro Low Poly",
-                    "Pixel-Art 3D",
-                    "Realistic PBR",
-                    "Photorealistic Scan",
-                    "Medieval Realism",
-                    "Military Realism",
-                    "Dark Fantasy",
-                    "High Fantasy",
-                    "Horror Gothic",
-                    "Post-Apocalyptic",
-                    "Steampunk",
-                    "Cyberpunk",
-                    "Sci-Fi",
-                    "Space Opera",
-                    "Hand-Painted Cartoon",
-                    "Toon / Cel Shaded",
-                    "Anime Stylized",
-                    "Chibi",
-                    "Claymation / Stop Motion",
-                    "Casual Mobile",
-                    "Isometric RPG",
-                    "Western Frontier",
-                    "Nordic Viking",
-                    "Ancient Egyptian",
-                    "Aztec / Mayan",
-                    "Oriental / East Asian",
-                    "Watercolor Stylized",
-                    "Papercraft",
-                ], {
-                    "default": "Stylized Low Poly"
-                }),
-                "seed": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 0xffffffffffffffff
-                }),
+                "target_asset_count": ("INT", {"default": 12, "min": 1, "max": 50, "step": 1}),
+                "art_style": (ART_STYLES, {"default": "Stylized Low Poly"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+                "use_ollama": ("BOOLEAN", {"default": True,
+                    "label_on": "Ollama designs the asset list",
+                    "label_off": "Prompt-derived planner only"}),
             },
             "optional": {
-                "llm_breakdown_json": ("STRING", {
-                    "multiline": True,
-                    "default": ""
-                }),
+                "llm_breakdown_json": ("STRING", {"multiline": True, "default": ""}),
+                "ollama_url": ("STRING", {"default": "http://127.0.0.1:11434"}),
+                "ollama_model": ("STRING", {"default": "qwen2.5:7b"}),
             }
         }
 
@@ -76,103 +350,63 @@ class GameAssetPlannerNode:
     FUNCTION = "plan_assets"
     CATEGORY = "Geekatplay GameAssetMake/Planner"
 
-    def plan_assets(self, game_concept_prompt, target_asset_count, art_style, seed, llm_breakdown_json=""):
-        random.seed(seed)
+    def plan_assets(self, game_concept_prompt, target_asset_count, art_style, seed,
+                    use_ollama=True, llm_breakdown_json="",
+                    ollama_url="http://127.0.0.1:11434", ollama_model="qwen2.5:7b"):
+        rng = random.Random(seed)
 
-        # If external LLM / RAG / MCP breakdown JSON is supplied, parse it directly
+        # 1. An upstream planner (e.g. the Scene Director) wins outright.
         if llm_breakdown_json and llm_breakdown_json.strip().startswith("["):
             try:
                 manifest = json.loads(llm_breakdown_json)
-                prompts = [item.get("prompt", item.get("name", "")) for item in manifest]
+                prompts = [it.get("prompt", it.get("name", "")) for it in manifest]
                 return (json.dumps(manifest, indent=2), json.dumps(prompts, indent=2), len(manifest))
             except Exception:
                 pass
 
-        # Deterministic default game asset breakdown generator based on concept & style
-        categories = ["hero", "enemy", "boss", "weapon", "environment_prop", "interactable", "structure"]
-        
-        # Template bank for game asset breakdown
-        parsed_prompt = game_concept_prompt.lower()
-        
+        # 2. Ollama designs the inventory from the concept, 3. else prompt-derived.
+        plan = None
+        if use_ollama:
+            print(f"[Asset Planner] Asking {ollama_model} to design {target_asset_count} "
+                  f"assets for: {game_concept_prompt[:60]}...")
+            plan = ollama_asset_plan(game_concept_prompt, target_asset_count,
+                                     art_style, ollama_url, ollama_model, seed)
+        if not plan:
+            plan = deterministic_plan(game_concept_prompt, target_asset_count, seed)
+
         manifest = []
-        
-        # Primary Character / Hero
-        hero_name = "Paladin Knight Hero" if "hero" in parsed_prompt or "crawler" in parsed_prompt else "Main Character Hero"
-        manifest.append({
-            "id": "asset_01",
-            "name": hero_name,
-            "category": "hero",
-            "prompt": f"single {hero_name}, one character only, full body, 3/4 view facing the camera, isolated on pure white background, {art_style} style 3D game asset concept art, clear details, no text, no reference sheet",
-            "engine_target": "tripo",
-            "rig_type": "biped",
-            "include_texture": True,
-            "include_rigging": True,
-            "scale_override": [1.0, 1.0, 1.8],
-            "collision_type": "capsule",
-            "world_placement_offset": [0.0, 0.0, 90.0]
-        })
-
-        # Enemies (e.g., spiders, goblins, skeletons)
-        enemy_type = "Giant Dungeon Spider" if "spider" in parsed_prompt else "Dungeon Enemy Creature"
-        manifest.append({
-            "id": "asset_02",
-            "name": enemy_type,
-            "category": "enemy",
-            "prompt": f"single {enemy_type}, one creature only, full body, 3/4 view facing the camera, isolated on pure white background, {art_style} style 3D game asset concept art, detailed texture, no text, no reference sheet",
-            "engine_target": "tripo",
-            "rig_type": "quadruped",
-            "include_texture": True,
-            "include_rigging": True,
-            "scale_override": [1.2, 1.2, 0.8],
-            "collision_type": "box",
-            "world_placement_offset": [200.0, 150.0, 40.0]
-        })
-
-        # Environment & Props pool
-        prop_pool = [
-            ("Ancient Dungeon Chest", "interactable", [0.8, 0.6, 0.6], "box", [100.0, 300.0, 30.0]),
-            ("Rusty Iron Sword", "weapon", [0.2, 0.2, 1.2], "box", [50.0, 0.0, 100.0]),
-            ("Dungeon Wall Torch Stand", "environment_prop", [0.4, 0.4, 1.5], "box", [0.0, -200.0, 120.0]),
-            ("Stone Pillar Column", "structure", [1.0, 1.0, 3.5], "cylinder", [300.0, -300.0, 175.0]),
-            ("Wooden Barrel", "environment_prop", [0.7, 0.7, 0.9], "cylinder", [-150.0, 200.0, 45.0]),
-            ("Gothic Arch Door", "structure", [1.5, 0.3, 2.8], "box", [0.0, 500.0, 140.0]),
-            ("Skull Pile Prop", "environment_prop", [0.5, 0.5, 0.4], "box", [120.0, 180.0, 20.0]),
-            ("Health Potion Flask", "interactable", [0.3, 0.3, 0.4], "sphere", [80.0, 310.0, 65.0]),
-            ("Spider Egg Cluster", "environment_prop", [0.8, 0.8, 0.6], "sphere", [220.0, 180.0, 30.0]),
-            ("Dungeon Altar Shrine", "interactable", [1.8, 1.2, 1.0], "box", [-300.0, 0.0, 50.0]),
-            ("Iron Gate Grate", "structure", [1.8, 0.2, 2.5], "box", [0.0, -500.0, 125.0]),
-            ("Giant Spider Boss", "boss", [3.0, 3.0, 2.0], "box", [0.0, 800.0, 100.0]),
-        ]
-
-        # Populate up to target_asset_count
-        idx = 3
-        while len(manifest) < target_asset_count:
-            p_name, p_cat, p_scale, p_col, p_pos = prop_pool[(len(manifest) - 2) % len(prop_pool)]
-            asset_id = f"asset_{idx:02d}"
-            
-            # Determine suitable API & rigging defaults
-            rig = "biped" if p_cat in ["hero", "boss"] else ("quadruped" if "spider" in p_name.lower() else "none")
-            engine = "tripo" if rig != "none" else ("meshy" if (idx % 2 == 0) else "tripo")
+        for idx, entry in enumerate(plan[:target_asset_count], start=1):
+            cat = entry["category"] if entry["category"] in CATEGORY_SPECS else "environment_prop"
+            spec = CATEGORY_SPECS[cat]
+            size = entry.get("size", spec["size"])
+            desc = (entry.get("description") or entry["name"]).strip()
+            subject = entry["name"] if desc.lower() == entry["name"].lower() else f"{entry['name']}, {desc}"
 
             manifest.append({
-                "id": asset_id,
-                "name": f"{p_name} {idx}",
-                "category": p_cat,
-                "prompt": f"single {p_name}, one object only, 3/4 view angle, isolated on pure white background, {art_style} style 3D game asset concept art, production ready, high quality texture, no text, no reference sheet",
-                "engine_target": engine,
-                "rig_type": rig,
+                "id": f"asset_{idx:02d}",
+                "name": entry["name"],
+                "category": cat,
+                "prompt": (f"single {subject}, one object only, 3/4 view facing the camera, "
+                           f"isolated on pure white background, {art_style} style 3D game "
+                           f"asset concept art, production ready, no text, no reference sheet"),
+                "engine_target": "tripo",
+                "rig_type": spec["rig"],
                 "include_texture": True,
-                "include_rigging": (rig != "none"),
-                "scale_override": p_scale,
-                "collision_type": p_col,
-                "world_placement_offset": [p_pos[0] + random.randint(-20, 20), p_pos[1] + random.randint(-20, 20), p_pos[2]]
+                "include_rigging": spec["rig"] != "none",
+                "target_size_m": size,
+                "scale_override": [1.0, 1.0, 1.0],
+                "collision_type": spec["collision"],
+                "world_placement_offset": [
+                    rng.uniform(-40.0, 40.0) * 100.0,
+                    rng.uniform(-40.0, 40.0) * 100.0,
+                    size[2] * 100.0 / 2.0,
+                ],
+                "world_rotation_yaw": rng.uniform(0.0, 360.0),
             })
-            idx += 1
 
         prompt_list = [item["prompt"] for item in manifest]
+        print(f"[Asset Planner] {len(manifest)} assets planned: "
+              f"{', '.join(m['name'] for m in manifest[:6])}"
+              f"{' ...' if len(manifest) > 6 else ''}")
 
-        return (
-            json.dumps(manifest, indent=2),
-            json.dumps(prompt_list, indent=2),
-            len(manifest)
-        )
+        return (json.dumps(manifest, indent=2), json.dumps(prompt_list, indent=2), len(manifest))

@@ -157,12 +157,15 @@
         "Node name for S&R": "GameAssetPlannerNode"
       },
       "widgets_values": [
-        "3d dungeon crawler, with one hero and spiders, dark fantasy style, stone dungeon environment",
+        "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit",
         12,
         "Stylized Low Poly",
         0,
         "fixed",
-        ""
+        true,
+        "",
+        "http://127.0.0.1:11434",
+        "qwen2.5:7b"
       ]
     },
     {

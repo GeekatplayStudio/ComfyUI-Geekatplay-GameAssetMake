@@ -350,7 +350,10 @@
         "Stylized Low Poly",
         0,
         "fixed",
-        ""
+        false,
+        "",
+        "http://127.0.0.1:11434",
+        "qwen2.5:7b"
       ],
       "title": "Asset Planner (manifest from Scene Director layout)"
     },
