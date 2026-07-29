@@ -138,6 +138,43 @@ for path in sorted(glob.glob(os.path.join(WF_DIR, "*.json"))):
             problems.append(f"{ntype}#{nid}: widgets_values has {len(wv)} entries, "
                             f"definition expects {len(widgets)} "
                             f"({[w[0] for w in widgets]})")
+        elif isinstance(wv, list):
+            # VALUE-level check. A count-only check misses the worst failure mode:
+            # values shifted by one slot still count correctly but land in the wrong
+            # widget (art_style receiving 0, seed receiving "fixed"...).
+            for (wname, wtype), value in zip(widgets, wv):
+                if wname.endswith(".control_after_generate"):
+                    if value not in ("fixed", "increment", "decrement", "randomize"):
+                        problems.append(f"{ntype}#{nid}: '{wname}' = {value!r} is not a "
+                                        f"valid control mode")
+                    continue
+                defn = input_defn(ntype, wname)
+                if defn is None:
+                    continue
+                _section, spec = defn
+                t = spec[0]
+                opts = spec[1] if len(spec) > 1 else {}
+                if isinstance(t, list):
+                    if value not in t:
+                        problems.append(f"{ntype}#{nid}: '{wname}' = {value!r} is not one of "
+                                        f"{t[:6]}{'...' if len(t) > 6 else ''}")
+                elif t == "INT":
+                    if isinstance(value, bool) or not isinstance(value, int):
+                        problems.append(f"{ntype}#{nid}: '{wname}' should be INT, got {value!r}")
+                    elif isinstance(opts, dict):
+                        if "min" in opts and value < opts["min"]:
+                            problems.append(f"{ntype}#{nid}: '{wname}' = {value} below min {opts['min']}")
+                        if "max" in opts and value > opts["max"]:
+                            problems.append(f"{ntype}#{nid}: '{wname}' = {value} above max {opts['max']}")
+                elif t == "FLOAT":
+                    if isinstance(value, bool) or not isinstance(value, (int, float)):
+                        problems.append(f"{ntype}#{nid}: '{wname}' should be FLOAT, got {value!r}")
+                elif t == "BOOLEAN":
+                    if not isinstance(value, bool):
+                        problems.append(f"{ntype}#{nid}: '{wname}' should be BOOLEAN, got {value!r}")
+                elif t == "STRING":
+                    if not isinstance(value, str):
+                        problems.append(f"{ntype}#{nid}: '{wname}' should be STRING, got {value!r}")
 
     status = "OK " if not problems else "FAIL"
     print(f"[{status}] {fname} ({len(wf['nodes'])} nodes, {len(wf['links'])} links)")
