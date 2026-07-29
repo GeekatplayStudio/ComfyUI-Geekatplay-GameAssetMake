@@ -184,6 +184,14 @@ class Unified3DGeneratorNode:
                 "status": c.get("generation_status"),
                 "model_path": c.get("model_path"),
                 "format": c.get("model_format"),
+                # options the 3D preview modal needs for "adjust & regenerate"
+                "category": c.get("category", ""),
+                "asset_group": c.get("asset_group", ""),
+                "include_texture": c.get("include_texture", True),
+                "include_rigging": c.get("include_rigging", False),
+                "rig_type": c.get("rig_type", "none"),
+                "topology": default_topology,
+                "face_count": target_face_count,
             }
             for c in completed_manifest
         ]

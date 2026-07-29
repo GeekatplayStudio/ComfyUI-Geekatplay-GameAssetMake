@@ -516,20 +516,29 @@ def import_and_place_manifest_payload(payload_dict):
         _setup_sun(editor_actor_subsystem, environment)
 
     failed = []
+    results = []
     for asset in assets:
         # One bad asset must NEVER abort the rest of the batch
+        entry = {"id": asset.get("id"), "name": asset.get("name"),
+                 "imported": False, "detail": ""}
         try:
-            imported_count += _process_one_asset(
+            ok = _process_one_asset(
                 asset, asset_tools, editor_actor_subsystem,
                 target_folder, env_folder, auto_place, auto_collision)
+            imported_count += ok
+            entry["imported"] = bool(ok)
+            entry["detail"] = ("imported" if ok else
+                               "skipped (source file missing or unusable)")
         except Exception as exc:
             failed.append(asset.get("name", "?"))
+            entry["detail"] = str(exc)
             unreal.log_error(f"[GameAssetMake] Asset '{asset.get('name')}' failed: {exc} "
                              f"— continuing with the next asset.")
+        results.append(entry)
 
     unreal.log(f"[GameAssetMake] Batch complete: {imported_count}/{len(assets)} imported"
                + (f", failed: {failed}" if failed else "."))
-    return True
+    return results
 
 
 def _process_one_asset(asset, asset_tools, editor_actor_subsystem,

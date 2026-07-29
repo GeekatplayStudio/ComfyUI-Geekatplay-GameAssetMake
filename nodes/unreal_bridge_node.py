@@ -1,6 +1,7 @@
 import os
 import json
 import socket
+import uuid
 import urllib.request
 import urllib.error
 from .engine_check_node import ping_engine_bridge, filter_deliverable_assets
@@ -69,7 +70,9 @@ class UnrealEngineBridgeNode:
         except Exception:
             manifest = []
 
+        batch_id = uuid.uuid4().hex
         import_payload = {
+            "batch_id": batch_id,
             "target_content_folder": target_content_folder,
             "unit_scale_factor": unit_scale_factor,
             "auto_place_in_level": auto_place_in_level,
@@ -113,13 +116,16 @@ class UnrealEngineBridgeNode:
 
         payload_str = json.dumps(import_payload, indent=2)
         success = False
+        delivery = "not sent"
 
         if communication_mode == "HTTP Bridge Plugin (Port 30010)":
             # Verify the Unreal bridge is actually running before sending
             online, ping_msg = ping_engine_bridge(unreal_host, unreal_port, engine="unreal")
             print(f"[Unreal Bridge Check] {ping_msg}")
             if not online:
-                return (payload_str, len(import_payload["assets"]), False)
+                return self._finish(import_payload, payload_str, batch_id,
+                                    unreal_host, unreal_port, False,
+                                    f"Unreal bridge offline: {ping_msg}")
 
             # POST the full import payload to the ComfyUnrealBridge plugin listener
             url = f"http://{unreal_host}:{unreal_port}/import_assets"
@@ -133,12 +139,14 @@ class UnrealEngineBridgeNode:
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     if resp.status == 200:
                         success = True
+                        delivery = "delivered to Unreal, importing…"
                         try:
                             body = resp.read().decode("utf-8", "replace")
                             print(f"[Unreal Bridge] Unreal accepted the payload: {body}")
                         except Exception:
                             pass
             except Exception as err:
+                delivery = f"HTTP send failed: {err}"
                 print(f"[Unreal Bridge HTTP] Connection status: {err}")
 
         elif communication_mode == "Python Remote Socket":
@@ -149,7 +157,9 @@ class UnrealEngineBridgeNode:
                 s.sendall(payload_str.encode("utf-8"))
                 s.close()
                 success = True
+                delivery = "sent over python socket (no import confirmation available)"
             except Exception as err:
+                delivery = f"socket send failed: {err}"
                 print(f"[Unreal Python Socket] Connection status: {err}")
 
         # JSON File Sync mode (always saves a local sync manifest for Unreal python script plugin)
@@ -161,5 +171,32 @@ class UnrealEngineBridgeNode:
         
         if communication_mode == "JSON Manifest File Sync":
             success = True
+            delivery = f"manifest written to {sync_filepath}"
 
-        return (payload_str, len(import_payload["assets"]), success)
+        # Only the HTTP bridge can confirm per-asset imports back to the UI
+        trackable = success and communication_mode.startswith("HTTP")
+        return self._finish(import_payload, payload_str, batch_id,
+                            unreal_host, unreal_port, success, delivery,
+                            trackable=trackable)
+
+    def _finish(self, import_payload, payload_str, batch_id,
+                unreal_host, unreal_port, success, delivery, trackable=False):
+        """Builds the node result plus the ui message the import-status widget renders."""
+        ui_assets = [
+            {"id": a.get("id"), "name": a.get("name"),
+             "category": a.get("category"), "source_file": a.get("source_file")}
+            for a in import_payload["assets"]
+        ]
+        ui_info = {
+            "batch_id": batch_id,
+            "host": unreal_host,
+            "port": unreal_port,
+            "sent": success,
+            "trackable": trackable,
+            "delivery": delivery,
+            "assets": ui_assets,
+        }
+        return {
+            "ui": {"unreal_import": [ui_info]},
+            "result": (payload_str, len(import_payload["assets"]), success),
+        }

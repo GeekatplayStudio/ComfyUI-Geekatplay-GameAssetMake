@@ -18,9 +18,11 @@ import comfy_importer
 SERVER_PORT = 30010
 # Printed at startup; comfy_importer is hot-reloaded per payload, but this
 # server module itself only updates on an editor restart.
-SERVER_VERSION = "2026.07.28b-hot-reload"
+SERVER_VERSION = "2026.07.29a-import-results"
 _server_instance = None
 _pending_payloads = []
+# batch_id -> {"done": bool, "results": [{id, name, imported, detail}, ...]}
+_import_results = {}
 
 
 class ComfyUnrealRequestHandler(BaseHTTPRequestHandler):
@@ -30,6 +32,9 @@ class ComfyUnrealRequestHandler(BaseHTTPRequestHandler):
 
         try:
             payload = json.loads(post_data.decode("utf-8"))
+            batch_id = payload.get("batch_id")
+            if batch_id:
+                _import_results[batch_id] = {"done": False, "results": []}
             _pending_payloads.append(payload)
 
             self.send_response(200)
@@ -44,6 +49,21 @@ class ComfyUnrealRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
 
     def do_GET(self):
+        if self.path.startswith("/import_results"):
+            # /import_results?batch_id=... -> per-asset import outcome
+            batch_id = ""
+            if "?" in self.path:
+                from urllib.parse import parse_qs, urlparse
+                batch_id = parse_qs(urlparse(self.path).query).get("batch_id", [""])[0]
+            data = _import_results.get(batch_id)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            body = {"batch_id": batch_id, "known": data is not None}
+            body.update(data or {"done": False, "results": []})
+            self.wfile.write(json.dumps(body).encode("utf-8"))
+            return
+
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
@@ -74,8 +94,18 @@ def process_pending_imports_on_tick(delta_seconds):
                 if unreal:
                     unreal.log_warning(f"[GameAssetMake] Importer reload failed "
                                        f"({reload_err}); using the already-loaded copy.")
-            comfy_importer.import_and_place_manifest_payload(payload)
+            results = comfy_importer.import_and_place_manifest_payload(payload)
+            batch_id = payload.get("batch_id")
+            if batch_id:
+                _import_results[batch_id] = {
+                    "done": True,
+                    "results": results if isinstance(results, list) else [],
+                }
         except Exception as e:
+            batch_id = payload.get("batch_id")
+            if batch_id:
+                _import_results[batch_id] = {"done": True, "results": [],
+                                             "error": str(e)}
             if unreal:
                 import traceback
                 unreal.log_error(f"[GameAssetMake Bridge Import Error]: {e}")

@@ -20,6 +20,11 @@ from .placement_manager_node import AssetPlacementManagerNode
 from .sun_environment_node import SunEnvironmentNode
 from .environment_export_node import EnvironmentAssetExportNode
 
+try:
+    from . import web_routes  # noqa: F401  (registers /gameassetmake/* API routes)
+except Exception as _routes_err:
+    print(f"[GameAssetMake] web routes unavailable: {_routes_err}")
+
 NODE_CLASS_MAPPINGS = {
     "GameAssetPlannerNode": GameAssetPlannerNode,
     "GalleryApprovalNode": GalleryApprovalNode,

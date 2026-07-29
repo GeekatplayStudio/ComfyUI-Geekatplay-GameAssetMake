@@ -18,6 +18,10 @@ function esc(s) {
     }[c]));
 }
 
+// Shared with the 3D-preview modal so "Regenerate this asset" can re-approve
+// a single asset against the current batch signature.
+const galleryRef = { node: null, container: null };
+
 const GROUP_LABELS = {
     character: "👤 Characters (can be auto-rigged)",
     accessory: "🎒 Accessories & props",
@@ -116,6 +120,8 @@ app.registerExtension({
 
         const widgetContainer = document.createElement("div");
         widgetContainer.className = "comfy-unreal-gallery-container";
+        galleryRef.node = node;
+        galleryRef.container = widgetContainer;
 
         widgetContainer.innerHTML = `
             <div class="comfy-unreal-header">
@@ -240,10 +246,10 @@ app.registerExtension({
                 return;
             }
 
-            list.innerHTML = models.map(m => {
+            list.innerHTML = models.map((m, i) => {
                 const ok = String(m.status || "").includes("SUCCESS");
                 return `
-                <div class="comfy-unreal-asset-card">
+                <div class="comfy-unreal-asset-card gameassetmake-model-card" data-idx="${i}" title="Click to preview in 3D">
                     <div class="gameassetmake-status-dot ${ok ? "ok" : "fail"}"></div>
                     <div class="comfy-unreal-card-body">
                         <div class="comfy-unreal-card-title">${esc(m.name)}
@@ -252,8 +258,325 @@ app.registerExtension({
                         <div class="gameassetmake-model-status ${ok ? "ok" : "fail"}">${esc(m.status)}</div>
                         <div class="gameassetmake-model-path" title="${esc(m.model_path)}">${esc(m.model_path)}</div>
                     </div>
+                    <button class="comfy-unreal-btn" data-idx="${i}" data-act="preview">🧊 Preview 3D</button>
                 </div>`;
             }).join("");
+
+            list.onclick = (ev) => {
+                const card = ev.target.closest(".gameassetmake-model-card");
+                if (!card) return;
+                const m = models[Number(card.dataset.idx)];
+                if (m) openModelPreview(m, node);
+            };
+        };
+    },
+});
+
+// ---------------------------------------------------------------
+// Interactive 3D model preview modal (three.js) with
+// "adjust parameters & regenerate this asset"
+// ---------------------------------------------------------------
+const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.170.0";
+let _threeModules = null;
+
+async function loadThree() {
+    if (_threeModules) return _threeModules;
+    const [THREE, orbit, gltf, obj, fbx] = await Promise.all([
+        import(`${THREE_CDN}/build/three.module.js/+esm`),
+        import(`${THREE_CDN}/examples/jsm/controls/OrbitControls.js/+esm`),
+        import(`${THREE_CDN}/examples/jsm/loaders/GLTFLoader.js/+esm`),
+        import(`${THREE_CDN}/examples/jsm/loaders/OBJLoader.js/+esm`),
+        import(`${THREE_CDN}/examples/jsm/loaders/FBXLoader.js/+esm`),
+    ]);
+    _threeModules = {
+        THREE,
+        OrbitControls: orbit.OrbitControls,
+        GLTFLoader: gltf.GLTFLoader,
+        OBJLoader: obj.OBJLoader,
+        FBXLoader: fbx.FBXLoader,
+    };
+    return _threeModules;
+}
+
+function modelFileURL(path) {
+    return api.apiURL(`/gameassetmake/model?path=${encodeURIComponent(path)}`)
+        // api.apiURL prefixes /api which custom routes are also reachable under
+        ;
+}
+
+function openModelPreview(model, generatorNode) {
+    const isChar = model.asset_group === "character";
+    const modal = document.createElement("div");
+    modal.className = "comfy-unreal-modal";
+    modal.innerHTML = `
+      <div class="gameassetmake-preview-window">
+        <div class="gameassetmake-preview-head">
+            <div class="comfy-unreal-title">🧊 ${esc(model.name)}
+                <span class="comfy-unreal-cat">${esc(model.engine)} · ${esc(model.format)} · ${esc(model.status)}</span>
+            </div>
+            <button class="comfy-unreal-btn" data-act="close">✕ Close</button>
+        </div>
+        <div class="gameassetmake-preview-body">
+            <div class="gameassetmake-preview-canvas">
+                <div class="gameassetmake-preview-msg">Loading 3D viewer…</div>
+            </div>
+            <div class="gameassetmake-preview-params">
+                <div class="gameassetmake-preview-msg" style="text-align:left">
+                    Don't like it? Adjust and regenerate just this asset:</div>
+                <label>Engine
+                    <select data-p="engine">
+                        ${["tripo", "meshy", "hitem3d"].map(e =>
+                            `<option value="${e}" ${model.engine === e ? "selected" : ""}>${e}</option>`).join("")}
+                    </select></label>
+                <label>Format
+                    <select data-p="format">
+                        ${["FBX", "GLB", "OBJ"].map(f =>
+                            `<option value="${f}" ${model.format === f ? "selected" : ""}>${f}</option>`).join("")}
+                    </select></label>
+                <label>Topology
+                    <select data-p="topology">
+                        ${["quad", "triangle"].map(t =>
+                            `<option value="${t}" ${model.topology === t ? "selected" : ""}>${t}</option>`).join("")}
+                    </select></label>
+                <label>Face count
+                    <input type="number" data-p="faces" min="1000" max="100000" step="1000"
+                           value="${Number(model.face_count) || 15000}"></label>
+                <label><input type="checkbox" data-p="texture" ${model.include_texture ? "checked" : ""}> PBR Texture</label>
+                ${isChar ? `
+                <label><input type="checkbox" data-p="rig" ${model.include_rigging ? "checked" : ""}> Auto-Rig</label>
+                <label>Rig type
+                    <select data-p="rigtype">
+                        ${["biped", "quadruped", "none"].map(r =>
+                            `<option value="${r}" ${model.rig_type === r ? "selected" : ""}>${r}</option>`).join("")}
+                    </select></label>` : ""}
+                <button class="comfy-unreal-btn comfy-unreal-btn-regen" data-act="regen">
+                    🔁 Regenerate This Asset</button>
+                <div class="gameassetmake-preview-note" data-role="note"></div>
+            </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    let cleanupViewer = null;
+    const close = () => { cleanupViewer?.(); modal.remove(); };
+    modal.addEventListener("click", (ev) => {
+        if (ev.target === modal || ev.target.dataset?.act === "close") close();
+        else if (ev.target.dataset?.act === "regen") regenerateSingleAsset(model, generatorNode, modal);
+    });
+
+    const canvasHost = modal.querySelector(".gameassetmake-preview-canvas");
+    startViewer(canvasHost, model).then(fn => { cleanupViewer = fn; })
+        .catch(err => {
+            canvasHost.innerHTML = `<div class="gameassetmake-preview-msg">
+                ⚠ Could not preview this file.<br>${esc(err?.message || err)}<br><br>
+                Mock files and some FBX variants cannot be shown — the file itself is at:<br>
+                <span style="font-size:10px">${esc(model.model_path)}</span></div>`;
+        });
+}
+
+async function startViewer(host, model) {
+    const { THREE, OrbitControls, GLTFLoader, OBJLoader, FBXLoader } = await loadThree();
+    const url = modelFileURL(model.model_path);
+    const ext = String(model.model_path).split(".").pop().toLowerCase();
+
+    let object;
+    if (ext === "glb" || ext === "gltf") {
+        const gltf = await new GLTFLoader().loadAsync(url);
+        object = gltf.scene;
+    } else if (ext === "obj") {
+        object = await new OBJLoader().loadAsync(url);
+    } else if (ext === "fbx") {
+        object = await new FBXLoader().loadAsync(url);
+    } else {
+        throw new Error(`Unsupported preview format: .${ext}`);
+    }
+
+    host.innerHTML = "";
+    const w = host.clientWidth || 640, h = host.clientHeight || 480;
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    host.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1c23);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    key.position.set(3, 5, 4);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.5);
+    fill.position.set(-4, 2, -3);
+    scene.add(fill);
+
+    // center + frame the model
+    const box = new THREE.Box3().setFromObject(object);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    object.position.sub(center);
+    scene.add(object);
+    const radius = Math.max(size.x, size.y, size.z) || 1;
+
+    const camera = new THREE.PerspectiveCamera(45, w / h, radius / 100, radius * 100);
+    camera.position.set(radius * 1.4, radius * 0.9, radius * 1.4);
+
+    const grid = new THREE.GridHelper(radius * 3, 20, 0x3a3a46, 0x2a2a33);
+    grid.position.y = -size.y / 2;
+    scene.add(grid);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    let alive = true;
+    (function animate() {
+        if (!alive) return;
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    })();
+
+    return () => {
+        alive = false;
+        controls.dispose();
+        renderer.dispose();
+        renderer.domElement.remove();
+    };
+}
+
+function regenerateSingleAsset(model, generatorNode, modal) {
+    const note = modal.querySelector('[data-role="note"]');
+    const val = sel => modal.querySelector(`[data-p="${sel}"]`);
+
+    // 1) push the tweaked parameters onto the 3D Generator node
+    const setW = (name, v) => {
+        const wdg = generatorNode.widgets?.find(x => x.name === name);
+        if (wdg) wdg.value = v;
+    };
+    setW("engine", val("engine").value);
+    setW("output_format", val("format").value);
+    setW("default_topology", val("topology").value);
+    setW("target_face_count", Number(val("faces").value) || 15000);
+
+    // 2) approve ONLY this asset on the Gallery node (same batch signature,
+    //    so the concept images are reused and just this mesh is regenerated)
+    const gc = galleryRef.container;
+    const sig = gc?.dataset?.batchSignature;
+    if (!gc || !sig) {
+        note.textContent = "⚠ Gallery node not found in this workflow — regenerate from the Gallery instead.";
+        return;
+    }
+    const selection = { __batch__: sig };
+    selection[model.id] = {
+        approved: true,
+        include_texture: val("texture").checked,
+        include_rigging: val("rig") ? val("rig").checked : false,
+        rig_type: val("rigtype") ? val("rigtype").value : "none",
+    };
+    const payloadStr = JSON.stringify(selection);
+    gc.dataset.payload = payloadStr;
+    const ow = galleryRef.node.widgets?.find(w => w.name === "user_selection_override");
+    if (ow) ow.value = payloadStr;
+
+    note.textContent = `Queued: regenerating "${model.name}" only. Watch the queue — the new model will appear in the results list.`;
+    app.queuePrompt(0);
+    modal.remove();
+}
+
+// ---------------------------------------------------------------
+// Unreal Bridge: imported-assets checklist with live confirmation
+// polled back from the Unreal Editor
+// ---------------------------------------------------------------
+app.registerExtension({
+    name: "Geekatplay.GameAssetMake.UnrealImportStatus",
+
+    async nodeCreated(node) {
+        if (node.comfyClass !== "UnrealEngineBridgeNode") return;
+
+        const panel = document.createElement("div");
+        panel.className = "comfy-unreal-gallery-container";
+        panel.innerHTML = `
+            <div class="comfy-unreal-header">
+                <div class="comfy-unreal-title">⚡ Unreal Import Status</div>
+            </div>
+            <div class="gameassetmake-import-summary" style="font-size:12px; color:#888; padding:4px 0;">
+                Queue the workflow — every asset sent to Unreal is listed here
+                with its actual import result.</div>
+            <div class="comfy-unreal-asset-list gameassetmake-import-list"></div>
+        `;
+        node.addDOMWidget("unreal_import_status", "status_ui", panel, {
+            getValue() { return ""; },
+            setValue() {},
+        });
+
+        const summary = panel.querySelector(".gameassetmake-import-summary");
+        const list = panel.querySelector(".gameassetmake-import-list");
+        let pollTimer = null;
+
+        function renderRows(assets, resultsById, done) {
+            list.innerHTML = assets.map(a => {
+                const r = resultsById?.[a.id];
+                let icon, cls, detail;
+                if (r && r.imported) { icon = "✅"; cls = "ok"; detail = r.detail || "imported"; }
+                else if (r && done) { icon = "❌"; cls = "fail"; detail = r.detail || "failed"; }
+                else if (done) { icon = "⚠️"; cls = "fail"; detail = "no result reported"; }
+                else { icon = "⏳"; cls = ""; detail = "waiting for Unreal…"; }
+                return `
+                <div class="comfy-unreal-asset-card">
+                    <div style="font-size:16px; min-width:22px; text-align:center;">${icon}</div>
+                    <div class="comfy-unreal-card-body">
+                        <div class="comfy-unreal-card-title">${esc(a.name)}
+                            <span class="comfy-unreal-cat">${esc(a.category || "")}</span></div>
+                        <div class="gameassetmake-model-status ${cls}">${esc(detail)}</div>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        const origOnExecuted = node.onExecuted;
+        node.onExecuted = function (message) {
+            origOnExecuted?.apply(this, arguments);
+            const info = message?.unreal_import?.[0];
+            if (!info) return;
+
+            clearInterval(pollTimer);
+            summary.textContent = info.delivery || "";
+            summary.style.color = info.sent ? "#34ce57" : "#ff6b7a";
+
+            if (!info.assets?.length) {
+                list.innerHTML = `<div style="font-size:12px; color:#888; text-align:center; padding:12px;">
+                    No assets in this batch.</div>`;
+                return;
+            }
+            renderRows(info.assets, null, false);
+
+            if (!info.sent || !info.trackable) {
+                // no live confirmation channel — show what we know and stop
+                renderRows(info.assets, null, !info.sent);
+                return;
+            }
+
+            // Poll the bridge (via the ComfyUI proxy route) for real per-asset results
+            const started = Date.now();
+            pollTimer = setInterval(async () => {
+                try {
+                    const resp = await api.fetchApi(
+                        `/gameassetmake/unreal_import_status?host=${encodeURIComponent(info.host)}`
+                        + `&port=${info.port}&batch_id=${encodeURIComponent(info.batch_id)}`);
+                    const data = await resp.json();
+                    const byId = {};
+                    for (const r of (data.results || [])) byId[r.id] = r;
+                    renderRows(info.assets, byId, !!data.done);
+                    if (data.done) {
+                        clearInterval(pollTimer);
+                        const okCount = (data.results || []).filter(r => r.imported).length;
+                        summary.textContent = `Unreal import finished: ${okCount}/${info.assets.length} asset(s) imported.`;
+                        summary.style.color = okCount === info.assets.length ? "#34ce57" : "#ffcf6b";
+                    }
+                } catch (e) { /* keep polling until timeout */ }
+                if (Date.now() - started > 180000) {
+                    clearInterval(pollTimer);
+                    summary.textContent += " (stopped waiting after 3 min — check the Unreal Output Log)";
+                }
+            }, 2000);
         };
     },
 });

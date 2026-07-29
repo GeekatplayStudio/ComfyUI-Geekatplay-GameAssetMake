@@ -33,6 +33,8 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 - 📐 **Placement Manager** — the single authority for engine delivery: imports in the right order (terrain → sky → assets), normalizes every AI mesh to its intended real-world size by measuring its actual bounds in the engine, snaps asset Z onto the terrain heightfield, and nudges overlapping assets apart. One failing asset no longer aborts the batch.
 - 🔌 **Engine Connection Check** — a dedicated node (plus automatic pre-send verification in both bridges) confirms your Unreal/Unity editor bridge is installed, running, and reachable before you spend API credits.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
+- ✅ **Live Unreal import checklist** — the Unreal Bridge node shows every asset it sent with a real-time ⏳ → ✅/❌ status, polled straight from the running Unreal Editor, so you can see exactly what actually imported (and why something didn't) without switching to the Unreal Output Log.
+- 🧊 **In-browser 3D model preview & re-roll** — click any model in the 3D Generator's results panel to open an interactive three.js viewer (orbit/zoom, GLB/GLTF/OBJ/FBX). Don't like it? Tweak engine, format, topology, face count, texture, or rigging right there and hit **Regenerate This Asset** — it reruns just that one mesh against the same approved batch instead of the whole pipeline.
 - 📦 **Unity Editor Bridge** — a single-file Unity Editor script listening on port `8080` that imports models into `Assets/AI_Generated/` and instantiates them into the open scene, with automatic Unreal→Unity unit/axis conversion.
 - 🧪 **Dry-Run Mock Mode** — test the entire pipeline end-to-end with zero API credits spent before going live.
 
@@ -87,11 +89,12 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── terrain_mesh_node.py          # ⛰️ Terrain Mesh Builder (heightmap → mesh)
 │   ├── terrain_texture_node.py       # 🎨 Terrain Texture (aligned to the heightfield)
 │   ├── sun_environment_node.py       # ☀️ Sun / Environment (season + time → light)
-│   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge
+│   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge (+ live import checklist)
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
-│   └── engine_check_node.py          # 🔌 Engine Connection Check
+│   ├── engine_check_node.py          # 🔌 Engine Connection Check
+│   └── web_routes.py                 # /gameassetmake/* API: import-status proxy + model file server
 ├── web/
-│   ├── js/gallery_widget.js          # Interactive gallery front-end
+│   ├── js/gallery_widget.js          # Interactive gallery + 3D preview/regenerate front-end
 │   └── css/gallery.css               # Dark-mode styling
 ├── unreal_plugin/
 │   └── ComfyUnrealBridge/            # Droppable Unreal Engine 5 plugin
@@ -213,11 +216,12 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 2. **Generate 2D concepts** — feed `prompt_list_json` into the **🔁 Batch Concept Generator**, which loops over the prompts and renders one image per asset with per-item verification (**Z-Image Turbo recommended** — fast and the best at honoring "single object, isolated on white"). Don't wire the prompt list straight into a `CLIPTextEncode`: that collapses every asset into one prompt and every image then contains everything.
 3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**. (The 3D provider — Tripo3D / Meshy / Hitem3D — is set globally on the 3D Generator node, not per asset.)
 4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**, pick your `engine`. It submits cloud tasks, polls for completion, downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`, and shows a results panel of every model returned by the API.
-5. **Verify the engine bridge** — drop a **🔌 GameAssetMake Engine Connection Check** node (or just rely on the bridge nodes' own pre-send check) to confirm Unreal/Unity is running and reachable before sending assets.
-6. **Deliver to your engine** — connect `completed_3d_manifest_json` to:
+5. **Preview and, if needed, re-roll a model** — click any card in that results panel to open an in-browser 3D viewer. If a model isn't what you wanted, adjust engine/format/topology/face count/texture/rig right there and click **Regenerate This Asset** — only that mesh reruns, reusing the same approved concept image.
+6. **Verify the engine bridge** — drop a **🔌 GameAssetMake Engine Connection Check** node (or just rely on the bridge nodes' own pre-send check) to confirm Unreal/Unity is running and reachable before sending assets.
+7. **Deliver to your engine** — connect `completed_3d_manifest_json` to:
    - **⚡ Unreal Engine Bridge** (talks to `unreal_host:unreal_port`, default `127.0.0.1:30010`), and/or
    - **📦 Unity Engine Bridge** (talks to `unity_host:unity_port`, default `127.0.0.1:8080`).
-7. **Watch it land** — switch to your engine editor: models are imported, PBR materials built, collisions configured, unit scale applied, and actors/prefabs placed at the manifest's world coordinates.
+8. **Watch it land — and confirm it** — switch to your engine editor: models are imported, PBR materials built, collisions configured, unit scale applied, and actors/prefabs placed at the manifest's world coordinates. Back in ComfyUI, the Unreal Bridge node's checklist updates live (⏳ → ✅/❌) as each asset actually finishes importing, so you don't have to tab over to confirm anything landed.
 
 ---
 
@@ -227,6 +231,8 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 |---|---|
 | Bridge shows OFFLINE on the Connection Check node | Confirm the target editor (Unreal or Unity) is actually open with the plugin/script installed and enabled; check `host`/`port` match; a firewall may be blocking localhost traffic. |
 | Unreal never receives assets | Confirm the Output Log shows the bridge listener started on `30010`; check the plugin is enabled under Edit → Plugins; make sure ComfyUI and Unreal are on the same host or set `unreal_host` correctly. After editing/updating the plugin files, **restart the Unreal Editor** — its Python modules are cached and won't pick up changes otherwise. |
+| Assets "sent" but the Unreal Bridge node's checklist shows ⚠️/❌, or never resolves from ⏳ | Read the per-asset detail text — a common cause is `dry_run_mock` left ON upstream (mock files can't be imported). If every row stays ⏳ forever, the checklist's `/import_results` poll can't reach the bridge or the Unreal Editor was not restarted after updating the plugin (see above); check the Unreal Output Log directly as a fallback. |
+| 3D preview modal says "Could not preview this file" | Mock/placeholder files (from `dry_run_mock`) and some FBX variants (skeletal meshes with certain embedded formats) aren't renderable by the in-browser three.js viewer — the model file itself is still fine for engine import; check the path shown in the error. The viewer also needs internet access once, to load three.js from a CDN. |
 | Unity never receives assets | Port `8080` may already be in use — change `Port` in `ComfyUnityImporter.cs` and `unity_port` on the node to match; confirm the Console shows the listener started. |
 | `.glb` assets import but nothing appears in the Unity scene | Unity has no built-in glTF importer. Install **glTFast** (`com.unity.cloud.gltfast`) or **UnityGLTF**, or set the 3D Generator's `output_format` to `FBX` instead. |
 | Nothing lands in the engine even though the run "succeeded" | Check the console for `"Skipping N asset(s) that are not real meshes"` — this means `dry_run_mock` was left ON, so every model was a placeholder stub; the bridges refuse to ship those. Turn `dry_run_mock` off (or use a local Hunyuan3D workflow). |
@@ -244,9 +250,11 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 - [x] Full scene from one prompt (Scene Director: terrain + skydome + positioned assets)
 - [x] Terrain as a real walkable mesh (not just a heightmap texture)
 - [x] HiTem3D live-verified with correct two-key (AK/SK) auth
+- [x] Live Unreal import confirmation checklist (per-asset, polled from the running editor)
+- [x] In-browser 3D model preview with adjust-and-regenerate for a single asset
 - [ ] Additional cloud 3D backends (Rodin)
 - [ ] Native Unreal Landscape creation (currently: mesh terrain + optional manual Landscape import)
-- [ ] In-gallery per-asset prompt re-roll
+- [ ] In-gallery per-asset prompt re-roll (image stage — the 3D stage already supports this)
 - [ ] Direct Unreal Remote Control API material graph customization
 - [ ] Unity Addressables export mode
 
