@@ -15,6 +15,8 @@ Load via **Workflow → Open** or drag the `.json` onto the canvas.
 | `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** — Hunyuan3D 2.1 on your GPU, no API/keys/credits | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
 | `gameassetmake_full_scene_unreal.json` | 🎬 **FULL SCENE from one prompt** — terrain mesh + skydome + positioned assets | Unreal Engine 5 |
+| `gameassetmake_image_to_assetpack_unreal.json` / `_unity.json` | ✂️ **ONE IMAGE → whole asset pack** — every object extracted, approved, meshed, placed like the picture. Needs **no diffusion models** | UE5 / Unity |
+| `gameassetmake_styled_multiview_unreal.json` | 🎨🔄 Universal pipeline + **moodboard style lock** + **front/left/right/back turnaround** per approved asset | Unreal Engine 5 |
 
 ## 🎬 Full scene from one prompt
 
@@ -94,6 +96,61 @@ Every delivery now flows through the **Placement Manager** node, the single auth
 - Ground-texture-to-terrain pairing follows the two-step approach from the author's [ai-terrain](https://github.com/GeekatplayStudio/ai-terrain) project: texture generated to match the terrain description and elevation zones, then baked into the terrain `.glb` with matching UVs.
 
 The 3D provider (**Tripo3D / Meshy / HiTem3D**) is one global `engine` choice on the 3D Generator node — no more per-provider workflow duplicates. Unity delivery for terrain/skydome/textures: swap the bridge node for the Unity one.
+
+## ✂️ One image → whole asset pack
+
+The `image_to_assetpack` workflows start from a **picture instead of a prompt**: load one
+environment image (a concept painting, a screenshot of a game you like, an AI render) and
+the **✂️ Scene Element Extractor** mines it for every distinct object — buildings, benches,
+street lamps, crates — cutting each onto the clean white square the image-to-3D APIs
+require and writing a normal asset manifest. From there it is the standard chain:
+gallery approval stop → 3D generation → Placement Manager → engine bridge. This path
+needs **no diffusion models at all** — nothing is rendered, only detected and cropped.
+
+Extractor properties, and when to touch them:
+
+| Property | Default | What it does |
+|---|---|---|
+| `max_assets` | 12 | Cap on extracted objects. |
+| `min_object_area_pct` | 0.5 | Detections below this % of the image are noise. Raise to reduce clutter, lower to catch small props. |
+| `crop_padding_pct` | 8 | Margin around each detection box so tight boxes don't clip the object. |
+| `output_size` | 1024 | White-canvas size per extracted object — 1024 suits every 3D provider. |
+| `matte_on_white` | on | GrabCut cutout onto pure white. Needs `opencv-python`; without it the raw crop is used and busy backgrounds may leak into the mesh. |
+| `detection` | vlm+heuristic | `vlm`: a local Ollama **vision** model (gemma3:12b) finds and **names** the objects — strongly recommended for photos and busy scenes. `heuristic`: free local blob analysis (background estimated from the image border), fine for renders with clear ground/sky. The combined default tries the VLM and falls back. |
+| `art_style` | Stylized Low Poly | Written into each asset's prompt so guardrail retries and regenerations keep the pack's look. |
+| `scene_span_m` | 60 | Real-world width (meters) of the pictured area. Object positions in the image map through this to world positions, so the extracted pack **re-assembles in the engine like the picture**. Sizes are estimated from each object's share of the span; the engine importer still measures the actual mesh bounds and corrects the scale exactly. |
+
+Estimated sizes and positions are deliberately rough — the Placement Manager and the
+engine importer normalize against measured mesh bounds (`target_size_m`), the same as
+every other workflow in this pack.
+
+## 🎨 Style Reference & 🔄 Orthographic turnarounds
+
+`gameassetmake_styled_multiview_unreal.json` is the universal pipeline with the two
+consistency nodes added:
+
+**🎨 Style Reference (moodboard).** Load one reference image and its art style — palette,
+rendering technique, lighting mood — is distilled into a single style sentence and
+appended to **every** asset prompt in the manifest. The whole pack then shares one look
+instead of drifting per-seed. `extraction` = `vlm+palette` (default) asks a local Ollama
+vision model to write the sentence and falls back to a free local palette/lighting
+analysis; `style_strength` chooses whether the style is appended (*subtle*) or injected
+right after the subject so it dominates (*strong*); `extra_style_notes` adds your own
+words ("thick black outlines, hand-painted seams"). Text extraction rather than
+IPAdapter conditioning is deliberate: it works with any diffusion model the workflows
+use (Z-Image Turbo included), needs no extra model downloads, and the style survives
+into the manifest where cloud 3D texturing can also see it.
+
+**🔄 Orthographic Multi-View.** After the gallery approval, every approved asset gets a
+**front / left / right / back turnaround** — all views of one asset share one seed, so
+they describe a single consistent object. A lone 3/4 concept image leaves the far side
+of an asset to the 3D model's imagination; a turnaround pins it down. The view phrase
+*replaces* the "3/4 view" wording in each prompt (two view instructions in one prompt
+fight each other). Sheets are saved to `output/multiview/` and their paths recorded in
+the manifest as `view_image_paths`, ready for multiview-capable 3D APIs and for human
+artists. Pick fewer views (`front + back`) to halve the render time. Keep the seed
+**fixed** here for the same reason as the concept generator: *Approve & Continue* then
+reuses the cache instead of re-rendering everything.
 
 ## 🖥️ Local vs cloud 3D generation
 

@@ -19,6 +19,9 @@ from .layout_map_node import LayoutMapPreviewNode
 from .placement_manager_node import AssetPlacementManagerNode
 from .sun_environment_node import SunEnvironmentNode
 from .environment_export_node import EnvironmentAssetExportNode
+from .scene_element_extractor_node import SceneElementExtractorNode
+from .multiview_node import OrthographicMultiViewNode
+from .style_reference_node import StyleReferenceNode
 
 try:
     from . import web_routes  # noqa: F401  (registers /gameassetmake/* API routes)
@@ -42,7 +45,10 @@ NODE_CLASS_MAPPINGS = {
     "LayoutMapPreviewNode": LayoutMapPreviewNode,
     "AssetPlacementManagerNode": AssetPlacementManagerNode,
     "SunEnvironmentNode": SunEnvironmentNode,
-    "EnvironmentAssetExportNode": EnvironmentAssetExportNode
+    "EnvironmentAssetExportNode": EnvironmentAssetExportNode,
+    "SceneElementExtractorNode": SceneElementExtractorNode,
+    "OrthographicMultiViewNode": OrthographicMultiViewNode,
+    "StyleReferenceNode": StyleReferenceNode
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -62,5 +68,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LayoutMapPreviewNode": "🗺️ GameAssetMake Layout Map (top-down placement preview)",
     "AssetPlacementManagerNode": "📐 GameAssetMake Placement Manager (order, scale, terrain snap)",
     "SunEnvironmentNode": "☀️ GameAssetMake Sun / Environment (season + time → light)",
-    "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)"
+    "EnvironmentAssetExportNode": "🌍 GameAssetMake Environment Export (Terrain/Sky)",
+    "SceneElementExtractorNode": "✂️ GameAssetMake Scene Element Extractor (one image → asset pack)",
+    "OrthographicMultiViewNode": "🔄 GameAssetMake Orthographic Multi-View (turnaround sheet)",
+    "StyleReferenceNode": "🎨 GameAssetMake Style Reference (moodboard → consistent style)"
 }

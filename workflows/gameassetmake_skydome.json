@@ -1,803 +1,827 @@
 {
-  "last_node_id": 60,
-  "last_link_id": 14,
-  "nodes": [
-    {
-      "id": 1,
-      "type": "UNETLoader",
-      "pos": [
-        40,
-        60
-      ],
-      "size": [
-        380,
-        90
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            1
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UNETLoader"
-      },
-      "widgets_values": [
-        "z_image_turbo_bf16.safetensors",
-        "default"
-      ],
-      "title": "Z-Image Turbo (diffusion model)"
-    },
-    {
-      "id": 12,
-      "type": "CLIPLoader",
-      "pos": [
-        40,
-        200
-      ],
-      "size": [
-        380,
-        110
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            2,
-            3
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPLoader"
-      },
-      "widgets_values": [
-        "qwen_3_4b.safetensors",
-        "lumina2",
-        "default"
-      ],
-      "title": "Text Encoder (Qwen3-4B)"
-    },
-    {
-      "id": 13,
-      "type": "VAELoader",
-      "pos": [
-        40,
-        360
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            8
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "ae.safetensors"
-      ],
-      "title": "VAE (Flux-style 16ch)"
-    },
-    {
-      "id": 3,
-      "type": "CLIPTextEncode",
-      "pos": [
-        480,
-        200
-      ],
-      "size": [
-        340,
-        200
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            4
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "equirectangular 360 degree panorama of a dramatic fantasy sky at golden hour, towering clouds, atmospheric haze, seamless horizontal wrap, high dynamic range, no ground objects"
-      ],
-      "title": "Skydome Prompt (edit me)"
-    },
-    {
-      "id": 4,
-      "type": "CLIPTextEncode",
-      "pos": [
-        480,
-        450
-      ],
-      "size": [
-        340,
-        110
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 3
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            5
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "text, watermark, people, buildings, seam, border"
-      ],
-      "title": "Negative"
-    },
-    {
-      "id": 5,
-      "type": "EmptySD3LatentImage",
-      "pos": [
-        480,
-        610
-      ],
-      "size": [
-        300,
-        110
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            6
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EmptySD3LatentImage"
-      },
-      "widgets_values": [
-        2048,
-        1024,
-        1
-      ],
-      "title": "Panorama Latent 2:1 (16ch)"
-    },
-    {
-      "id": 6,
-      "type": "KSampler",
-      "pos": [
-        880,
-        200
-      ],
-      "size": [
-        300,
-        260
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1
-        },
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 4
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 5
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 6
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            7
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "KSampler"
-      },
-      "widgets_values": [
-        0,
-        "randomize",
-        8,
-        1.0,
-        "euler",
-        "simple",
-        1.0
-      ]
-    },
-    {
-      "id": 7,
-      "type": "VAEDecode",
-      "pos": [
-        880,
-        520
-      ],
-      "size": [
-        200,
-        60
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 7
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 8
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            9
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAEDecode"
-      },
-      "widgets_values": []
-    },
-    {
-      "id": 14,
-      "type": "Heal360Seam",
-      "pos": [
-        1160,
-        200
-      ],
-      "size": [
-        280,
-        100
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 9
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            10
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "Heal360Seam"
-      },
-      "widgets_values": [
-        0.05
-      ],
-      "title": "Heal 360 Seam — Blender-Toolbox"
-    },
-    {
-      "id": 15,
-      "type": "SaveFakeHDRI",
-      "pos": [
-        1160,
-        360
-      ],
-      "size": [
-        280,
-        160
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 10
-        }
-      ],
-      "outputs": [
-        {
-          "name": "full_path",
-          "type": "STRING",
-          "links": [
-            11
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SaveFakeHDRI"
-      },
-      "widgets_values": [
-        "GameAssetMake_Skydome",
-        2.0,
-        2.2
-      ],
-      "title": "Save HDRI (.exr) — Blender-Toolbox"
-    },
-    {
-      "id": 9,
-      "type": "EnvironmentAssetExportNode",
-      "pos": [
-        1500,
-        200
-      ],
-      "size": [
-        380,
-        240
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": null
-        },
-        {
-          "name": "file_path",
-          "type": "STRING",
-          "link": 11
-        }
-      ],
-      "outputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "links": [
-            12
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "file_path",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EnvironmentAssetExportNode"
-      },
-      "widgets_values": [
-        "skydome_hdri",
-        "Skydome_01",
-        1000.0,
-        200.0
-      ],
-      "title": "🌍 Export Skydome for Engine"
-    },
-    {
-      "id": 55,
-      "type": "AssetPlacementManagerNode",
-      "pos": [
-        1940,
-        200
-      ],
-      "size": [
-        420,
-        260
-      ],
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "assets_manifest_json",
-          "type": "STRING",
-          "link": null
-        },
-        {
-          "name": "terrain_manifest_json",
-          "type": "STRING",
-          "link": null
-        },
-        {
-          "name": "skydome_manifest_json",
-          "type": "STRING",
-          "link": 12
-        },
-        {
-          "name": "extra_manifest_json",
-          "type": "STRING",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "links": [
-            13
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "placement_report",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "asset_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "AssetPlacementManagerNode"
-      },
-      "widgets_values": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        12.0
-      ],
-      "title": "PLACEMENT MANAGER"
-    },
-    {
-      "id": 60,
-      "type": "SunEnvironmentNode",
-      "pos": [
-        1940,
-        520
-      ],
-      "size": [
-        400,
-        210
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "environment_json",
-          "type": "STRING",
-          "links": [
-            14
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "sun_summary",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SunEnvironmentNode"
-      },
-      "widgets_values": [
-        "summer",
-        "sunset",
-        "from season + time",
-        200.0,
-        35.0,
-        10.0,
-        "#FFF4E0"
-      ],
-      "title": "SUN - drives the DirectionalLight in the engine"
-    },
-    {
-      "id": 10,
-      "type": "UnrealEngineBridgeNode",
-      "pos": [
-        2420,
-        200
-      ],
-      "size": [
-        400,
-        320
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "link": 13
-        },
-        {
-          "name": "unreal_project_content_dir",
-          "type": "STRING",
-          "link": null,
-          "widget": {
-            "name": "unreal_project_content_dir"
-          }
-        },
-        {
-          "name": "environment_json",
-          "type": "STRING",
-          "link": 14
-        }
-      ],
-      "outputs": [
-        {
-          "name": "unreal_import_payload_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 0
-        },
-        {
-          "name": "imported_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "success",
-          "type": "BOOLEAN",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UnrealEngineBridgeNode"
-      },
-      "widgets_values": [
-        "127.0.0.1",
-        30010,
-        "HTTP Bridge Plugin (Port 30010)",
-        "/Game/Assets/AI_Generated/",
-        100.0,
-        true,
-        true,
-        ""
-      ]
-    },
-    {
-      "id": 11,
-      "type": "EngineConnectionCheckNode",
-      "pos": [
-        2420,
-        620
-      ],
-      "size": [
-        400,
-        160
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "engine_online",
-          "type": "BOOLEAN",
-          "links": [],
-          "slot_index": 0
-        },
-        {
-          "name": "status_message",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EngineConnectionCheckNode"
-      },
-      "widgets_values": [
-        "unreal",
-        "127.0.0.1",
-        30010
-      ],
-      "title": "Verify Unreal Bridge Is Running"
-    }
-  ],
-  "links": [
-    [
-      1,
-      1,
-      0,
-      6,
-      0,
-      "MODEL"
-    ],
-    [
-      2,
-      12,
-      0,
-      3,
-      0,
-      "CLIP"
-    ],
-    [
-      3,
-      12,
-      0,
-      4,
-      0,
-      "CLIP"
-    ],
-    [
-      4,
-      3,
-      0,
-      6,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      5,
-      4,
-      0,
-      6,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      6,
-      5,
-      0,
-      6,
-      3,
-      "LATENT"
-    ],
-    [
-      7,
-      6,
-      0,
-      7,
-      0,
-      "LATENT"
-    ],
-    [
-      8,
-      13,
-      0,
-      7,
-      1,
-      "VAE"
-    ],
-    [
-      9,
-      7,
-      0,
-      14,
-      0,
-      "IMAGE"
-    ],
-    [
-      10,
-      14,
-      0,
-      15,
-      0,
-      "IMAGE"
-    ],
-    [
-      11,
-      15,
-      0,
-      9,
-      1,
-      "STRING"
-    ],
-    [
-      12,
-      9,
-      0,
-      55,
-      2,
-      "STRING"
-    ],
-    [
-      13,
-      55,
-      0,
-      10,
-      0,
-      "STRING"
-    ],
-    [
-      14,
-      60,
-      0,
-      10,
-      2,
-      "STRING"
-    ]
-  ],
-  "groups": [],
-  "config": {},
-  "extra": {
-    "workflow_info": {
-      "name": "Geekatplay GameAssetMake — Skydome 360 HDRI from Prompt (Unreal)",
-      "author": "Geekatplay Studio — Vladimir Chopine",
-      "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
-    }
+ "last_node_id": 61,
+ "last_link_id": 14,
+ "nodes": [
+  {
+   "id": 61,
+   "type": "MarkdownNote",
+   "pos": [
+    40,
+    -400
+   ],
+   "size": [
+    980,
+    420
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "properties": {},
+   "widgets_values": [
+    "# 🌅 360° Skydome HDRI — Geekatplay GameAssetMake\n### (c) Geekatplay Studio / Vladimir Chopine — geekatplay.com\n\nDescription → 2:1 equirectangular panorama → **seam heal** (the left/right edges must\nmeet) → **HDRI (.exr)** → an **unlit emissive sky sphere** is created automatically in Unreal (material built from the texture, applied to an inverted 800 m dome) plus a **SkyLight** capturing it for image-based ambient light. The ☀️ Sun node configures the DirectionalLight\nto match, so sky and lighting agree.\n\n## Key properties\n- The panorama prompt should describe the FULL sky sphere (horizon to zenith); time of\n  day and weather words drive the look.\n- **Seam heal** blends the wrap-around edge — skip it and the sky has a visible vertical\n  line behind the scene.\n- The EXR is imported as a texture and the sky sphere material is built and applied by the importer.\n- **Import + Set Up In Scene** on the bridge does all of this automatically; *Import As\n  Assets Only* just delivers the files.\n- Companion nodes from **ComfyUI-Blender-Toolbox** (same author) are used for the\n  panorama/EXR steps — install it alongside this pack.\n"
+   ],
+   "title": "READ ME — Geekatplay GameAssetMake",
+   "color": "#432",
+   "bgcolor": "#653"
   },
-  "version": 0.4
+  {
+   "id": 1,
+   "type": "UNETLoader",
+   "pos": [
+    40,
+    60
+   ],
+   "size": [
+    380,
+    90
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UNETLoader"
+   },
+   "widgets_values": [
+    "z_image_turbo_bf16.safetensors",
+    "default"
+   ],
+   "title": "Z-Image Turbo (diffusion model)"
+  },
+  {
+   "id": 12,
+   "type": "CLIPLoader",
+   "pos": [
+    40,
+    200
+   ],
+   "size": [
+    380,
+    110
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      2,
+      3
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPLoader"
+   },
+   "widgets_values": [
+    "qwen_3_4b.safetensors",
+    "lumina2",
+    "default"
+   ],
+   "title": "Text Encoder (Qwen3-4B)"
+  },
+  {
+   "id": 13,
+   "type": "VAELoader",
+   "pos": [
+    40,
+    360
+   ],
+   "size": [
+    380,
+    60
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      8
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAELoader"
+   },
+   "widgets_values": [
+    "ae.safetensors"
+   ],
+   "title": "VAE (Flux-style 16ch)"
+  },
+  {
+   "id": 3,
+   "type": "CLIPTextEncode",
+   "pos": [
+    480,
+    200
+   ],
+   "size": [
+    340,
+    200
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 2
+    }
+   ],
+   "outputs": [
+    {
+     "name": "CONDITIONING",
+     "type": "CONDITIONING",
+     "links": [
+      4
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPTextEncode"
+   },
+   "widgets_values": [
+    "equirectangular 360 degree panorama of a dramatic fantasy sky at golden hour, towering clouds, atmospheric haze, seamless horizontal wrap, high dynamic range, no ground objects"
+   ],
+   "title": "Skydome Prompt (edit me)"
+  },
+  {
+   "id": 4,
+   "type": "CLIPTextEncode",
+   "pos": [
+    480,
+    450
+   ],
+   "size": [
+    340,
+    110
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 3
+    }
+   ],
+   "outputs": [
+    {
+     "name": "CONDITIONING",
+     "type": "CONDITIONING",
+     "links": [
+      5
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPTextEncode"
+   },
+   "widgets_values": [
+    "text, watermark, people, buildings, seam, border"
+   ],
+   "title": "Negative"
+  },
+  {
+   "id": 5,
+   "type": "EmptySD3LatentImage",
+   "pos": [
+    480,
+    610
+   ],
+   "size": [
+    300,
+    110
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      6
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EmptySD3LatentImage"
+   },
+   "widgets_values": [
+    2048,
+    1024,
+    1
+   ],
+   "title": "Panorama Latent 2:1 (16ch)"
+  },
+  {
+   "id": 6,
+   "type": "KSampler",
+   "pos": [
+    880,
+    200
+   ],
+   "size": [
+    300,
+    260
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    },
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 4
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 5
+    },
+    {
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 6
+    }
+   ],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      7
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "KSampler"
+   },
+   "widgets_values": [
+    0,
+    "randomize",
+    8,
+    1.0,
+    "euler",
+    "simple",
+    1.0
+   ]
+  },
+  {
+   "id": 7,
+   "type": "VAEDecode",
+   "pos": [
+    880,
+    520
+   ],
+   "size": [
+    200,
+    60
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "samples",
+     "type": "LATENT",
+     "link": 7
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 8
+    }
+   ],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      9
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAEDecode"
+   },
+   "widgets_values": []
+  },
+  {
+   "id": 14,
+   "type": "Heal360Seam",
+   "pos": [
+    1160,
+    200
+   ],
+   "size": [
+    280,
+    100
+   ],
+   "flags": {},
+   "order": 11,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "image",
+     "type": "IMAGE",
+     "link": 9
+    }
+   ],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      10
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "Heal360Seam"
+   },
+   "widgets_values": [
+    0.05
+   ],
+   "title": "Heal 360 Seam — Blender-Toolbox"
+  },
+  {
+   "id": 15,
+   "type": "SaveFakeHDRI",
+   "pos": [
+    1160,
+    360
+   ],
+   "size": [
+    280,
+    160
+   ],
+   "flags": {},
+   "order": 12,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 10
+    }
+   ],
+   "outputs": [
+    {
+     "name": "full_path",
+     "type": "STRING",
+     "links": [
+      11
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SaveFakeHDRI"
+   },
+   "widgets_values": [
+    "GameAssetMake_Skydome",
+    2.0,
+    2.2
+   ],
+   "title": "Save HDRI (.exr) — Blender-Toolbox"
+  },
+  {
+   "id": 9,
+   "type": "EnvironmentAssetExportNode",
+   "pos": [
+    1500,
+    200
+   ],
+   "size": [
+    380,
+    240
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "image",
+     "type": "IMAGE",
+     "link": null
+    },
+    {
+     "name": "file_path",
+     "type": "STRING",
+     "link": 11
+    }
+   ],
+   "outputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "links": [
+      12
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "file_path",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EnvironmentAssetExportNode"
+   },
+   "widgets_values": [
+    "skydome_hdri",
+    "Skydome_01",
+    1000.0,
+    200.0
+   ],
+   "title": "🌍 Export Skydome for Engine"
+  },
+  {
+   "id": 55,
+   "type": "AssetPlacementManagerNode",
+   "pos": [
+    1940,
+    200
+   ],
+   "size": [
+    420,
+    260
+   ],
+   "flags": {},
+   "order": 13,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "assets_manifest_json",
+     "type": "STRING",
+     "link": null
+    },
+    {
+     "name": "terrain_manifest_json",
+     "type": "STRING",
+     "link": null
+    },
+    {
+     "name": "skydome_manifest_json",
+     "type": "STRING",
+     "link": 12
+    },
+    {
+     "name": "extra_manifest_json",
+     "type": "STRING",
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "links": [
+      13
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "placement_report",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "asset_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "AssetPlacementManagerNode"
+   },
+   "widgets_values": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    12.0
+   ],
+   "title": "PLACEMENT MANAGER"
+  },
+  {
+   "id": 60,
+   "type": "SunEnvironmentNode",
+   "pos": [
+    1940,
+    520
+   ],
+   "size": [
+    400,
+    210
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "environment_json",
+     "type": "STRING",
+     "links": [
+      14
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "sun_summary",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SunEnvironmentNode"
+   },
+   "widgets_values": [
+    "summer",
+    "sunset",
+    "from season + time",
+    200.0,
+    35.0,
+    10.0,
+    "#FFF4E0"
+   ],
+   "title": "SUN - drives the DirectionalLight in the engine"
+  },
+  {
+   "id": 10,
+   "type": "UnrealEngineBridgeNode",
+   "pos": [
+    2420,
+    200
+   ],
+   "size": [
+    400,
+    320
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "link": 13
+    },
+    {
+     "name": "unreal_project_content_dir",
+     "type": "STRING",
+     "link": null,
+     "widget": {
+      "name": "unreal_project_content_dir"
+     }
+    },
+    {
+     "name": "environment_json",
+     "type": "STRING",
+     "link": 14
+    }
+   ],
+   "outputs": [
+    {
+     "name": "unreal_import_payload_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "imported_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "success",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UnrealEngineBridgeNode"
+   },
+   "widgets_values": [
+    "127.0.0.1",
+    30010,
+    "HTTP Bridge Plugin (Port 30010)",
+    "/Game/Assets/AI_Generated/",
+    100.0,
+    true,
+    true,
+    ""
+   ]
+  },
+  {
+   "id": 11,
+   "type": "EngineConnectionCheckNode",
+   "pos": [
+    2420,
+    620
+   ],
+   "size": [
+    400,
+    160
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "engine_online",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "status_message",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EngineConnectionCheckNode"
+   },
+   "widgets_values": [
+    "unreal",
+    "127.0.0.1",
+    30010
+   ],
+   "title": "Verify Unreal Bridge Is Running"
+  }
+ ],
+ "links": [
+  [
+   1,
+   1,
+   0,
+   6,
+   0,
+   "MODEL"
+  ],
+  [
+   2,
+   12,
+   0,
+   3,
+   0,
+   "CLIP"
+  ],
+  [
+   3,
+   12,
+   0,
+   4,
+   0,
+   "CLIP"
+  ],
+  [
+   4,
+   3,
+   0,
+   6,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   5,
+   4,
+   0,
+   6,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   6,
+   5,
+   0,
+   6,
+   3,
+   "LATENT"
+  ],
+  [
+   7,
+   6,
+   0,
+   7,
+   0,
+   "LATENT"
+  ],
+  [
+   8,
+   13,
+   0,
+   7,
+   1,
+   "VAE"
+  ],
+  [
+   9,
+   7,
+   0,
+   14,
+   0,
+   "IMAGE"
+  ],
+  [
+   10,
+   14,
+   0,
+   15,
+   0,
+   "IMAGE"
+  ],
+  [
+   11,
+   15,
+   0,
+   9,
+   1,
+   "STRING"
+  ],
+  [
+   12,
+   9,
+   0,
+   55,
+   2,
+   "STRING"
+  ],
+  [
+   13,
+   55,
+   0,
+   10,
+   0,
+   "STRING"
+  ],
+  [
+   14,
+   60,
+   0,
+   10,
+   2,
+   "STRING"
+  ]
+ ],
+ "groups": [],
+ "config": {},
+ "extra": {
+  "workflow_info": {
+   "name": "Geekatplay GameAssetMake — Skydome 360 HDRI from Prompt (Unreal)",
+   "author": "Geekatplay Studio — Vladimir Chopine",
+   "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
+  }
+ },
+ "version": 0.4
 }

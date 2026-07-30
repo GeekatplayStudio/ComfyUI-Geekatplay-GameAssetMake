@@ -1,796 +1,796 @@
 {
-  "last_node_id": 60,
-  "last_link_id": 14,
-  "nodes": [
+ "last_node_id": 60,
+ "last_link_id": 14,
+ "nodes": [
+  {
+   "id": 1,
+   "type": "UNETLoader",
+   "pos": [
+    40,
+    60
+   ],
+   "size": [
+    380,
+    90
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
     {
-      "id": 1,
-      "type": "UNETLoader",
-      "pos": [
-        40,
-        60
-      ],
-      "size": [
-        380,
-        90
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            1
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UNETLoader"
-      },
-      "widgets_values": [
-        "z_image_turbo_bf16.safetensors",
-        "default"
-      ],
-      "title": "Z-Image Turbo (diffusion model)"
-    },
-    {
-      "id": 12,
-      "type": "CLIPLoader",
-      "pos": [
-        40,
-        200
-      ],
-      "size": [
-        380,
-        110
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            2
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPLoader"
-      },
-      "widgets_values": [
-        "qwen_3_4b.safetensors",
-        "lumina2",
-        "default"
-      ],
-      "title": "Text Encoder (Qwen3-4B)"
-    },
-    {
-      "id": 13,
-      "type": "VAELoader",
-      "pos": [
-        40,
-        360
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            3
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "ae.safetensors"
-      ],
-      "title": "VAE (Flux-style 16ch)"
-    },
-    {
-      "id": 2,
-      "type": "GameAssetPlannerNode",
-      "pos": [
-        40,
-        470
-      ],
-      "size": [
-        380,
-        260
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "llm_breakdown_json",
-          "type": "STRING",
-          "link": null,
-          "widget": {
-            "name": "llm_breakdown_json"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "links": [
-            5,
-            7
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "prompt_list_json",
-          "type": "STRING",
-          "links": [
-            4
-          ],
-          "slot_index": 1
-        },
-        {
-          "name": "count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "GameAssetPlannerNode"
-      },
-      "widgets_values": [
-        "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit",
-        12,
-        4,
-        "Stylized Low Poly",
-        0,
-        "fixed",
-        true,
-        "",
-        "http://127.0.0.1:11434",
-        "qwen2.5:7b",
-        "Auto — rig by asset category",
-        "Auto — rig-ready pose when rigging is on"
-      ]
-    },
-    {
-      "id": 6,
-      "type": "BatchConceptGeneratorNode",
-      "pos": [
-        520,
-        200
-      ],
-      "size": [
-        420,
-        560
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 3
-        },
-        {
-          "name": "prompt_list_json",
-          "type": "STRING",
-          "link": 4
-        },
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "link": 5
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            6
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "generation_report_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "image_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "BatchConceptGeneratorNode"
-      },
-      "widgets_values": [
-        "multiple objects, group, collage, grid, reference sheet, text, watermark, cropped, blurry, low quality",
-        1024,
-        1024,
-        8,
-        1.0,
-        "euler",
-        "simple",
-        0,
-        "fixed",
-        16,
-        true,
-        "heuristic+vlm",
-        2,
-        "http://127.0.0.1:11434",
-        "gemma3:12b"
-      ],
-      "title": "🔁 Batch Concept Generator - one image per asset (loops + verifies)"
-    },
-    {
-      "id": 8,
-      "type": "GalleryApprovalNode",
-      "pos": [
-        1020,
-        200
-      ],
-      "size": [
-        420,
-        520
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 6
-        },
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "link": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "approved_assets_json",
-          "type": "STRING",
-          "links": [
-            11
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "image_paths_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "approved_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "GalleryApprovalNode"
-      },
-      "widgets_values": [
-        "PAUSE for my approval",
-        ""
-      ]
-    },
-    {
-      "id": 20,
-      "type": "ImageOnlyCheckpointLoader",
-      "pos": [
-        1500,
-        40
-      ],
-      "size": [
-        400,
-        100
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            8
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "CLIP_VISION",
-          "type": "CLIP_VISION",
-          "links": [
-            9
-          ],
-          "slot_index": 1
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            10
-          ],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ImageOnlyCheckpointLoader"
-      },
-      "widgets_values": [
-        "hunyuan_3d_v2.1.safetensors"
-      ],
-      "title": "Hunyuan3D 2.1 checkpoint (local)"
-    },
-    {
-      "id": 9,
-      "type": "LocalHunyuan3DGeneratorNode",
-      "pos": [
-        1500,
-        200
-      ],
-      "size": [
-        420,
-        470
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 8
-        },
-        {
-          "name": "clip_vision",
-          "type": "CLIP_VISION",
-          "link": 9
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 10
-        },
-        {
-          "name": "approved_assets_json",
-          "type": "STRING",
-          "link": 11
-        }
-      ],
-      "outputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "links": [
-            12
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "asset_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LocalHunyuan3DGeneratorNode"
-      },
-      "widgets_values": [
-        30,
-        5.0,
-        "euler",
-        "normal",
-        0,
-        "randomize",
-        4096,
-        256,
-        "surface net",
-        0.6,
-        8000,
-        "center"
-      ],
-      "title": "🖥 Local 3D Generator - Hunyuan3D 2.1 (no API, no credits)"
-    },
-    {
-      "id": 21,
-      "type": "MarkdownNote",
-      "pos": [
-        40,
-        780
-      ],
-      "size": [
-        420,
-        240
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "MarkdownNote"
-      },
-      "widgets_values": [
-        "## Fully local - no API keys\n\n3D meshes are generated on your GPU with **Hunyuan3D 2.1**. Nothing is uploaded and no credits are spent.\n\n**Required model**\n\n[hunyuan_3d_v2.1.safetensors](https://huggingface.co/Comfy-Org/hunyuan3D_2.1_repackaged/resolve/main/hunyuan_3d_v2.1.safetensors)\n\n```\nComfyUI/models/checkpoints/hunyuan_3d_v2.1.safetensors\n```\n\nOutputs `.glb` geometry with vertex colors. For PBR-textured meshes and auto-rigging, use the cloud API workflow instead."
-      ],
-      "title": "Local Hunyuan3D - model setup"
-    },
-    {
-      "id": 55,
-      "type": "AssetPlacementManagerNode",
-      "pos": [
-        1980,
-        40
-      ],
-      "size": [
-        420,
-        260
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "assets_manifest_json",
-          "type": "STRING",
-          "link": 12
-        },
-        {
-          "name": "terrain_manifest_json",
-          "type": "STRING",
-          "link": null
-        },
-        {
-          "name": "skydome_manifest_json",
-          "type": "STRING",
-          "link": null
-        },
-        {
-          "name": "extra_manifest_json",
-          "type": "STRING",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "links": [
-            13
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "placement_report",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "asset_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "AssetPlacementManagerNode"
-      },
-      "widgets_values": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        12.0
-      ],
-      "title": "PLACEMENT MANAGER - true scale + positions"
-    },
-    {
-      "id": 10,
-      "type": "UnityEngineBridgeNode",
-      "pos": [
-        2460,
-        200
-      ],
-      "size": [
-        400,
-        220
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "link": 13
-        },
-        {
-          "name": "environment_json",
-          "type": "STRING",
-          "link": 14
-        }
-      ],
-      "outputs": [
-        {
-          "name": "unity_import_payload_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 0
-        },
-        {
-          "name": "imported_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "success",
-          "type": "BOOLEAN",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UnityEngineBridgeNode"
-      },
-      "widgets_values": [
-        "127.0.0.1",
-        8080,
-        "Assets/AI_Generated/",
-        true
-      ]
-    },
-    {
-      "id": 60,
-      "type": "SunEnvironmentNode",
-      "pos": [
-        2460,
-        820
-      ],
-      "size": [
-        400,
-        210
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "environment_json",
-          "type": "STRING",
-          "links": [
-            14
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "sun_summary",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SunEnvironmentNode"
-      },
-      "widgets_values": [
-        "summer",
-        "afternoon",
-        "from season + time",
-        200.0,
-        35.0,
-        10.0,
-        "#FFF4E0"
-      ],
-      "title": "SUN - sets the DirectionalLight in the engine"
-    },
-    {
-      "id": 11,
-      "type": "EngineConnectionCheckNode",
-      "pos": [
-        2460,
-        620
-      ],
-      "size": [
-        400,
-        160
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "engine_online",
-          "type": "BOOLEAN",
-          "links": [],
-          "slot_index": 0
-        },
-        {
-          "name": "status_message",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EngineConnectionCheckNode"
-      },
-      "widgets_values": [
-        "unity",
-        "127.0.0.1",
-        8080
-      ],
-      "title": "Verify Unity Bridge Is Running"
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ],
+     "slot_index": 0
     }
-  ],
-  "links": [
-    [
-      1,
-      1,
-      0,
-      6,
-      0,
-      "MODEL"
-    ],
-    [
-      2,
-      12,
-      0,
-      6,
-      1,
-      "CLIP"
-    ],
-    [
-      3,
-      13,
-      0,
-      6,
-      2,
-      "VAE"
-    ],
-    [
-      4,
-      2,
-      1,
-      6,
-      3,
-      "STRING"
-    ],
-    [
-      5,
-      2,
-      0,
-      6,
-      4,
-      "STRING"
-    ],
-    [
-      6,
-      6,
-      0,
-      8,
-      0,
-      "IMAGE"
-    ],
-    [
-      7,
-      2,
-      0,
-      8,
-      1,
-      "STRING"
-    ],
-    [
-      8,
-      20,
-      0,
-      9,
-      0,
-      "MODEL"
-    ],
-    [
-      9,
-      20,
-      1,
-      9,
-      1,
-      "CLIP_VISION"
-    ],
-    [
-      10,
-      20,
-      2,
-      9,
-      2,
-      "VAE"
-    ],
-    [
-      11,
-      8,
-      0,
-      9,
-      3,
-      "STRING"
-    ],
-    [
-      12,
-      9,
-      0,
-      55,
-      0,
-      "STRING"
-    ],
-    [
-      13,
-      55,
-      0,
-      10,
-      0,
-      "STRING"
-    ],
-    [
-      14,
-      60,
-      0,
-      10,
-      1,
-      "STRING"
-    ]
-  ],
-  "groups": [],
-  "config": {},
-  "extra": {
-    "workflow_info": {
-      "name": "Geekatplay GameAssetMake — Local 3D Asset Pipeline - Hunyuan3D (Unity)",
-      "author": "Geekatplay Studio — Vladimir Chopine",
-      "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
-    }
+   ],
+   "properties": {
+    "Node name for S&R": "UNETLoader"
+   },
+   "widgets_values": [
+    "z_image_turbo_bf16.safetensors",
+    "default"
+   ],
+   "title": "Z-Image Turbo (diffusion model)"
   },
-  "version": 0.4
+  {
+   "id": 12,
+   "type": "CLIPLoader",
+   "pos": [
+    40,
+    200
+   ],
+   "size": [
+    380,
+    110
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      2
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPLoader"
+   },
+   "widgets_values": [
+    "qwen_3_4b.safetensors",
+    "lumina2",
+    "default"
+   ],
+   "title": "Text Encoder (Qwen3-4B)"
+  },
+  {
+   "id": 13,
+   "type": "VAELoader",
+   "pos": [
+    40,
+    360
+   ],
+   "size": [
+    380,
+    60
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      3
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAELoader"
+   },
+   "widgets_values": [
+    "ae.safetensors"
+   ],
+   "title": "VAE (Flux-style 16ch)"
+  },
+  {
+   "id": 2,
+   "type": "GameAssetPlannerNode",
+   "pos": [
+    40,
+    470
+   ],
+   "size": [
+    380,
+    260
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "llm_breakdown_json",
+     "type": "STRING",
+     "link": null,
+     "widget": {
+      "name": "llm_breakdown_json"
+     }
+    }
+   ],
+   "outputs": [
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "links": [
+      5,
+      7
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "prompt_list_json",
+     "type": "STRING",
+     "links": [
+      4
+     ],
+     "slot_index": 1
+    },
+    {
+     "name": "count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "GameAssetPlannerNode"
+   },
+   "widgets_values": [
+    "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit",
+    12,
+    4,
+    "Stylized Low Poly",
+    0,
+    "fixed",
+    true,
+    "",
+    "http://127.0.0.1:11434",
+    "qwen2.5:7b",
+    "Auto — rig by asset category",
+    "Auto — rig-ready pose when rigging is on"
+   ]
+  },
+  {
+   "id": 6,
+   "type": "BatchConceptGeneratorNode",
+   "pos": [
+    520,
+    200
+   ],
+   "size": [
+    420,
+    560
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    },
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 2
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 3
+    },
+    {
+     "name": "prompt_list_json",
+     "type": "STRING",
+     "link": 4
+    },
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "link": 5
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": [
+      6
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "generation_report_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "image_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "BatchConceptGeneratorNode"
+   },
+   "widgets_values": [
+    "multiple objects, group, collage, grid, reference sheet, text, watermark, cropped, blurry, low quality",
+    1024,
+    1024,
+    8,
+    1.0,
+    "euler",
+    "simple",
+    0,
+    "fixed",
+    16,
+    true,
+    "heuristic+vlm",
+    2,
+    "http://127.0.0.1:11434",
+    "gemma3:12b"
+   ],
+   "title": "🔁 Batch Concept Generator - one image per asset (loops + verifies)"
+  },
+  {
+   "id": 8,
+   "type": "GalleryApprovalNode",
+   "pos": [
+    1020,
+    200
+   ],
+   "size": [
+    420,
+    520
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 6
+    },
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "link": 7
+    }
+   ],
+   "outputs": [
+    {
+     "name": "approved_assets_json",
+     "type": "STRING",
+     "links": [
+      11
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "image_paths_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "approved_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "GalleryApprovalNode"
+   },
+   "widgets_values": [
+    "PAUSE for my approval",
+    ""
+   ]
+  },
+  {
+   "id": 20,
+   "type": "ImageOnlyCheckpointLoader",
+   "pos": [
+    1500,
+    40
+   ],
+   "size": [
+    400,
+    100
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      8
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "CLIP_VISION",
+     "type": "CLIP_VISION",
+     "links": [
+      9
+     ],
+     "slot_index": 1
+    },
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      10
+     ],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "ImageOnlyCheckpointLoader"
+   },
+   "widgets_values": [
+    "hunyuan_3d_v2.1.safetensors"
+   ],
+   "title": "Hunyuan3D 2.1 checkpoint (local)"
+  },
+  {
+   "id": 9,
+   "type": "LocalHunyuan3DGeneratorNode",
+   "pos": [
+    1500,
+    200
+   ],
+   "size": [
+    420,
+    470
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 8
+    },
+    {
+     "name": "clip_vision",
+     "type": "CLIP_VISION",
+     "link": 9
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 10
+    },
+    {
+     "name": "approved_assets_json",
+     "type": "STRING",
+     "link": 11
+    }
+   ],
+   "outputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "links": [
+      12
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "asset_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LocalHunyuan3DGeneratorNode"
+   },
+   "widgets_values": [
+    30,
+    5.0,
+    "euler",
+    "normal",
+    0,
+    "randomize",
+    4096,
+    256,
+    "surface net",
+    0.6,
+    8000,
+    "center"
+   ],
+   "title": "🖥 Local 3D Generator - Hunyuan3D 2.1 (no API, no credits)"
+  },
+  {
+   "id": 21,
+   "type": "MarkdownNote",
+   "pos": [
+    40,
+    780
+   ],
+   "size": [
+    980,
+    420
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "properties": {
+    "Node name for S&R": "MarkdownNote"
+   },
+   "widgets_values": [
+    "# 🖥️ Fully Local 3D — Geekatplay GameAssetMake\n### (c) Geekatplay Studio / Vladimir Chopine — geekatplay.com\n\nThe universal pipeline with **Hunyuan3D 2.1 on your own GPU** instead of cloud APIs:\nno keys, no credits, nothing uploaded. Needs `hunyuan_3d_v2.1.safetensors` (~7.4 GB) in\n`ComfyUI/models/checkpoints/`, loaded through `ImageOnlyCheckpointLoader`. The 🖥️ Local\n3D Generator loops over every approved asset: CLIP-Vision encode → Hunyuan3D\nconditioning → KSampler (30 steps, cfg 5) → voxel decode → mesh → `.glb` with vertex\ncolors. Rigging and PBR texture maps are cloud-only — use the API workflow for those.\nEverything else (planner, guardrail, gallery pause, placement, 📦 Unity Bridge) works exactly\nlike the universal workflow — see its README section for the property guide.\n"
+   ],
+   "title": "READ ME — Geekatplay GameAssetMake"
+  },
+  {
+   "id": 55,
+   "type": "AssetPlacementManagerNode",
+   "pos": [
+    1980,
+    40
+   ],
+   "size": [
+    420,
+    260
+   ],
+   "flags": {},
+   "order": 11,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "assets_manifest_json",
+     "type": "STRING",
+     "link": 12
+    },
+    {
+     "name": "terrain_manifest_json",
+     "type": "STRING",
+     "link": null
+    },
+    {
+     "name": "skydome_manifest_json",
+     "type": "STRING",
+     "link": null
+    },
+    {
+     "name": "extra_manifest_json",
+     "type": "STRING",
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "links": [
+      13
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "placement_report",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "asset_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "AssetPlacementManagerNode"
+   },
+   "widgets_values": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    12.0
+   ],
+   "title": "PLACEMENT MANAGER - true scale + positions"
+  },
+  {
+   "id": 10,
+   "type": "UnityEngineBridgeNode",
+   "pos": [
+    2460,
+    200
+   ],
+   "size": [
+    400,
+    220
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "link": 13
+    },
+    {
+     "name": "environment_json",
+     "type": "STRING",
+     "link": 14
+    }
+   ],
+   "outputs": [
+    {
+     "name": "unity_import_payload_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "imported_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "success",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UnityEngineBridgeNode"
+   },
+   "widgets_values": [
+    "127.0.0.1",
+    8080,
+    "Assets/AI_Generated/",
+    true
+   ]
+  },
+  {
+   "id": 60,
+   "type": "SunEnvironmentNode",
+   "pos": [
+    2460,
+    820
+   ],
+   "size": [
+    400,
+    210
+   ],
+   "flags": {},
+   "order": 12,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "environment_json",
+     "type": "STRING",
+     "links": [
+      14
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "sun_summary",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SunEnvironmentNode"
+   },
+   "widgets_values": [
+    "summer",
+    "afternoon",
+    "from season + time",
+    200.0,
+    35.0,
+    10.0,
+    "#FFF4E0"
+   ],
+   "title": "SUN - sets the DirectionalLight in the engine"
+  },
+  {
+   "id": 11,
+   "type": "EngineConnectionCheckNode",
+   "pos": [
+    2460,
+    620
+   ],
+   "size": [
+    400,
+    160
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "engine_online",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "status_message",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EngineConnectionCheckNode"
+   },
+   "widgets_values": [
+    "unity",
+    "127.0.0.1",
+    8080
+   ],
+   "title": "Verify Unity Bridge Is Running"
+  }
+ ],
+ "links": [
+  [
+   1,
+   1,
+   0,
+   6,
+   0,
+   "MODEL"
+  ],
+  [
+   2,
+   12,
+   0,
+   6,
+   1,
+   "CLIP"
+  ],
+  [
+   3,
+   13,
+   0,
+   6,
+   2,
+   "VAE"
+  ],
+  [
+   4,
+   2,
+   1,
+   6,
+   3,
+   "STRING"
+  ],
+  [
+   5,
+   2,
+   0,
+   6,
+   4,
+   "STRING"
+  ],
+  [
+   6,
+   6,
+   0,
+   8,
+   0,
+   "IMAGE"
+  ],
+  [
+   7,
+   2,
+   0,
+   8,
+   1,
+   "STRING"
+  ],
+  [
+   8,
+   20,
+   0,
+   9,
+   0,
+   "MODEL"
+  ],
+  [
+   9,
+   20,
+   1,
+   9,
+   1,
+   "CLIP_VISION"
+  ],
+  [
+   10,
+   20,
+   2,
+   9,
+   2,
+   "VAE"
+  ],
+  [
+   11,
+   8,
+   0,
+   9,
+   3,
+   "STRING"
+  ],
+  [
+   12,
+   9,
+   0,
+   55,
+   0,
+   "STRING"
+  ],
+  [
+   13,
+   55,
+   0,
+   10,
+   0,
+   "STRING"
+  ],
+  [
+   14,
+   60,
+   0,
+   10,
+   1,
+   "STRING"
+  ]
+ ],
+ "groups": [],
+ "config": {},
+ "extra": {
+  "workflow_info": {
+   "name": "Geekatplay GameAssetMake — Local 3D Asset Pipeline - Hunyuan3D (Unity)",
+   "author": "Geekatplay Studio — Vladimir Chopine",
+   "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
+  }
+ },
+ "version": 0.4
 }

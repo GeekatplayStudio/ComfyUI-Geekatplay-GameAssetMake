@@ -1,17 +1,17 @@
 {
- "last_node_id": 61,
- "last_link_id": 11,
+ "last_node_id": 100,
+ "last_link_id": 23,
  "nodes": [
   {
-   "id": 61,
+   "id": 100,
    "type": "MarkdownNote",
    "pos": [
     40,
-    -420
+    -460
    ],
    "size": [
     980,
-    420
+    430
    ],
    "flags": {},
    "order": 0,
@@ -20,9 +20,9 @@
    "outputs": [],
    "properties": {},
    "widgets_values": [
-    "# 🎮 Universal 3D Asset Pipeline — Geekatplay GameAssetMake\n### (c) Geekatplay Studio / Vladimir Chopine — geekatplay.com\n\nOne prompt → a full pack of engine-ready 3D assets. **🎮 Planner** turns the concept into\nan asset manifest (Ollama designs the list when running, prompt-derived fallback otherwise);\n**🔁 Batch Concept Generator** renders ONE image per asset (each with its own seed, verified\nsingle-object-on-white with auto-retry); the **🖼️ Gallery PAUSES the run** so you tick what\nbecomes 3D and what gets rigged; **🧊 3D Generator** meshes the approved set; **📐 Placement\nManager → 📦 Unity Bridge** delivers at true scale.\n\n## Key properties\n- **Planner** — `target_asset_count` (how many assets), `environment_pieces` (modular\n  walls/floors/stairs kit, 0 = props+characters only), `art_style` (30+ styles),\n  `rigging` + `character_pose` (auto-riggers need a symmetrical A/T-pose; the 3/4 hero\n  pose fuses limbs and rigs badly — Auto handles this).\n- **Concept seed ships FIXED on purpose** — with randomize, pressing *Approve & Continue*\n  would regenerate different images and pause again. Use the gallery's **Regenerate\n  Images** button when you want new concepts; it rolls the seeds for you.\n- **Guardrail** (`verify_single_object`, on) — heuristic blob check + optional Ollama\n  vision cross-check (`gemma3:12b`); failures retry with a stricter prompt.\n- **Gallery `approval_mode`** — *PAUSE for my approval* (default) stops before any API\n  credit is spent; or auto-approve all / by group.\n- **3D Generator** — one global `engine` choice (Tripo / Meshy / HiTem3D). Keys typed\n  once with `remember_keys` ON go to the **OS credential vault**, never into this JSON.\n  **`dry_run_mock` is ON** — flip to *Live Cloud APIs* to actually generate.\n- **Bridge master toggle** — *Import + Set Up In Scene* places everything; *Import As\n  Assets Only* just fills `Assets/AI_Generated/`. **☀️ Sun** node configures the DirectionalLight so\n  imports never render black.\n\n## Models required (concepts)\nZ-Image Turbo: `UNETLoader → z_image_turbo_bf16.safetensors`, `CLIPLoader (lumina2) →\nqwen_3_4b.safetensors`, `VAELoader → ae.safetensors` — 8 steps @ cfg 1.0, 16-ch latents.\nBridge must be running (Unity :8080); the 🔌 check node shows ONLINE/OFFLINE.\n"
+    "# 🎨🔄 Styled Asset Pack + Turnarounds — Geekatplay GameAssetMake\n### (c) Geekatplay Studio / Vladimir Chopine — geekatplay.com\n\nThe universal text→asset-pack pipeline, upgraded with the two consistency nodes:\n\n1. **🎮 Asset Planner** — your game concept → structured asset manifest.\n2. **🎨 Style Reference** — load a **moodboard image** (screenshot of the game you're\n   matching, a painting, a photo) and its art style is distilled into one style\n   sentence, appended to EVERY asset prompt. The whole pack shares one look\n   instead of drifting per-seed.\n3. **🔁 Batch Concept Generator** — one styled image per asset, verified single-object.\n4. **🖼️ Gallery** — PAUSES; tick what becomes 3D, choose rigging, or regenerate.\n5. **🔄 Orthographic Multi-View** — for every APPROVED asset, renders a consistent\n   front/left/right/back turnaround (same seed per asset across views). Views are\n   saved to `output/multiview/` and their paths recorded in the manifest\n   (`view_image_paths`) for multiview-capable 3D APIs and for your artists.\n6. **🧊 3D Generator → 📐 Placement → ⚡ Unreal Bridge** — the usual delivery.\n\n## 🎨 Style Reference properties\n- **extraction** — `vlm+palette` (default): local Ollama *vision* model (gemma3:12b)\n  writes the style sentence; free local palette/lighting analysis is the fallback.\n- **style_strength** — *subtle* appends the style at the prompt end; *strong* injects it\n  right after the subject so it dominates the render.\n- **extra_style_notes** — your own words, appended after the extracted style\n  (e.g. \"thick black outlines, hand-painted seams\").\n\n## 🔄 Multi-View properties\n- **views** — which orthographic views to render; the full 4-view turnaround is default.\n- The view phrase REPLACES the \"3/4 view\" wording in each prompt — two view\n  instructions in one prompt fight each other.\n- Same sampling settings as the concept pass; keep **seed fixed** so pressing\n  *Approve & Continue* reuses the cache instead of re-rendering.\n\n## Models (same as every GameAssetMake concept workflow)\nZ-Image Turbo: `UNETLoader → z_image_turbo_bf16.safetensors`,\n`CLIPLoader (lumina2) → qwen_3_4b.safetensors`, `VAELoader → ae.safetensors`,\n8 steps @ cfg 1.0, 16-channel latents. **dry_run_mock is ON** — flip it off to spend credits.\n"
    ],
-   "title": "READ ME — Geekatplay GameAssetMake",
+   "title": "🎨🔄 READ ME — Styled Pack + Turnarounds",
    "color": "#432",
    "bgcolor": "#653"
   },
@@ -38,7 +38,7 @@
     90
    ],
    "flags": {},
-   "order": 0,
+   "order": 1,
    "mode": 0,
    "inputs": [],
    "outputs": [
@@ -46,7 +46,8 @@
      "name": "MODEL",
      "type": "MODEL",
      "links": [
-      1
+      1,
+      20
      ],
      "slot_index": 0
     }
@@ -72,7 +73,7 @@
     110
    ],
    "flags": {},
-   "order": 7,
+   "order": 2,
    "mode": 0,
    "inputs": [],
    "outputs": [
@@ -80,7 +81,8 @@
      "name": "CLIP",
      "type": "CLIP",
      "links": [
-      2
+      2,
+      21
      ],
      "slot_index": 0
     }
@@ -107,7 +109,7 @@
     60
    ],
    "flags": {},
-   "order": 8,
+   "order": 3,
    "mode": 0,
    "inputs": [],
    "outputs": [
@@ -115,7 +117,8 @@
      "name": "VAE",
      "type": "VAE",
      "links": [
-      3
+      3,
+      22
      ],
      "slot_index": 0
     }
@@ -140,7 +143,7 @@
     260
    ],
    "flags": {},
-   "order": 1,
+   "order": 4,
    "mode": 0,
    "inputs": [
     {
@@ -157,17 +160,14 @@
      "name": "asset_manifest_json",
      "type": "STRING",
      "links": [
-      5,
-      7
+      10
      ],
      "slot_index": 0
     },
     {
      "name": "prompt_list_json",
      "type": "STRING",
-     "links": [
-      4
-     ],
+     "links": [],
      "slot_index": 1
     },
     {
@@ -193,21 +193,124 @@
     "qwen2.5:7b",
     "Auto — rig by asset category",
     "Auto — rig-ready pose when rigging is on"
-   ]
+   ],
+   "title": "🎮 Asset Planner — game concept → asset manifest"
+  },
+  {
+   "id": 30,
+   "type": "LoadImage",
+   "pos": [
+    40,
+    790
+   ],
+   "size": [
+    380,
+    340
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      11
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "example.png"
+   ],
+   "title": "🎨 Moodboard / style reference image"
+  },
+  {
+   "id": 31,
+   "type": "StyleReferenceNode",
+   "pos": [
+    520,
+    790
+   ],
+   "size": [
+    420,
+    300
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "reference_image",
+     "type": "IMAGE",
+     "link": 11
+    },
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "link": 10
+    }
+   ],
+   "outputs": [
+    {
+     "name": "style_text",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "styled_manifest_json",
+     "type": "STRING",
+     "links": [
+      12,
+      14
+     ],
+     "slot_index": 1
+    },
+    {
+     "name": "styled_prompt_list_json",
+     "type": "STRING",
+     "links": [
+      13
+     ],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "StyleReferenceNode"
+   },
+   "widgets_values": [
+    "vlm+palette",
+    "subtle (append once)",
+    "",
+    "http://127.0.0.1:11434",
+    "gemma3:12b"
+   ],
+   "title": "🎨 Style Reference — moodboard style onto every prompt"
   },
   {
    "id": 6,
    "type": "BatchConceptGeneratorNode",
    "pos": [
     520,
-    200
+    60
    ],
    "size": [
     420,
     560
    ],
    "flags": {},
-   "order": 2,
+   "order": 7,
    "mode": 0,
    "inputs": [
     {
@@ -228,12 +331,12 @@
     {
      "name": "prompt_list_json",
      "type": "STRING",
-     "link": 4
+     "link": 13
     },
     {
      "name": "asset_manifest_json",
      "type": "STRING",
-     "link": 5
+     "link": 12
     }
    ],
    "outputs": [
@@ -278,21 +381,21 @@
     "http://127.0.0.1:11434",
     "gemma3:12b"
    ],
-   "title": "🔁 Batch Concept Generator — one image per asset (loops + verifies)"
+   "title": "🔁 Batch Concept Generator — one styled image per asset"
   },
   {
    "id": 8,
    "type": "GalleryApprovalNode",
    "pos": [
     1020,
-    200
+    60
    ],
    "size": [
     420,
     520
    ],
    "flags": {},
-   "order": 3,
+   "order": 8,
    "mode": 0,
    "inputs": [
     {
@@ -303,7 +406,7 @@
     {
      "name": "asset_manifest_json",
      "type": "STRING",
-     "link": 7
+     "link": 14
     }
    ],
    "outputs": [
@@ -311,7 +414,7 @@
      "name": "approved_assets_json",
      "type": "STRING",
      "links": [
-      8
+      15
      ],
      "slot_index": 0
     },
@@ -334,27 +437,134 @@
    "widgets_values": [
     "PAUSE for my approval",
     ""
-   ]
+   ],
+   "title": "🖼️ Gallery — PAUSES until you approve"
+  },
+  {
+   "id": 40,
+   "type": "OrthographicMultiViewNode",
+   "pos": [
+    1500,
+    60
+   ],
+   "size": [
+    420,
+    480
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 20
+    },
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 21
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 22
+    },
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "link": 15
+    }
+   ],
+   "outputs": [
+    {
+     "name": "view_images",
+     "type": "IMAGE",
+     "links": [
+      16
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "manifest_with_views_json",
+     "type": "STRING",
+     "links": [
+      17
+     ],
+     "slot_index": 1
+    },
+    {
+     "name": "view_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "OrthographicMultiViewNode"
+   },
+   "widgets_values": [
+    "front + left + right + back (full turnaround)",
+    "multiple objects, group, collage, grid, reference sheet, perspective distortion, text, watermark, cropped, blurry",
+    1024,
+    1024,
+    8,
+    1.0,
+    "euler",
+    "simple",
+    0,
+    "fixed",
+    16
+   ],
+   "title": "🔄 Orthographic Multi-View — turnaround per approved asset"
+  },
+  {
+   "id": 41,
+   "type": "PreviewImage",
+   "pos": [
+    1500,
+    600
+   ],
+   "size": [
+    420,
+    300
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 16
+    }
+   ],
+   "outputs": [],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "title": "Turnaround sheets (front/left/right/back)"
   },
   {
    "id": 9,
    "type": "Unified3DGeneratorNode",
    "pos": [
-    1500,
-    200
+    1980,
+    60
    ],
    "size": [
     420,
     360
    ],
    "flags": {},
-   "order": 4,
+   "order": 11,
    "mode": 0,
    "inputs": [
     {
      "name": "approved_assets_json",
      "type": "STRING",
-     "link": 8
+     "link": 17
     }
    ],
    "outputs": [
@@ -362,7 +572,7 @@
      "name": "completed_3d_manifest_json",
      "type": "STRING",
      "links": [
-      9
+      18
      ],
      "slot_index": 0
     },
@@ -381,7 +591,7 @@
     "FBX",
     "quad",
     15000,
-    false,
+    true,
     "",
     "",
     "",
@@ -394,21 +604,21 @@
    "id": 55,
    "type": "AssetPlacementManagerNode",
    "pos": [
-    1980,
-    40
+    2460,
+    60
    ],
    "size": [
     420,
     260
    ],
    "flags": {},
-   "order": 9,
+   "order": 12,
    "mode": 0,
    "inputs": [
     {
      "name": "assets_manifest_json",
      "type": "STRING",
-     "link": 9
+     "link": 18
     },
     {
      "name": "terrain_manifest_json",
@@ -431,7 +641,7 @@
      "name": "completed_3d_manifest_json",
      "type": "STRING",
      "links": [
-      10
+      19
      ],
      "slot_index": 0
     },
@@ -464,33 +674,41 @@
   },
   {
    "id": 10,
-   "type": "UnityEngineBridgeNode",
+   "type": "UnrealEngineBridgeNode",
    "pos": [
-    2460,
-    200
+    2940,
+    60
    ],
    "size": [
     400,
-    220
+    320
    ],
    "flags": {},
-   "order": 5,
+   "order": 13,
    "mode": 0,
    "inputs": [
     {
      "name": "completed_3d_manifest_json",
      "type": "STRING",
-     "link": 10
+     "link": 19
+    },
+    {
+     "name": "unreal_project_content_dir",
+     "type": "STRING",
+     "link": null,
+     "widget": {
+      "name": "unreal_project_content_dir"
+     }
     },
     {
      "name": "environment_json",
      "type": "STRING",
-     "link": 11
+     "link": 23
     }
    ],
    "outputs": [
     {
-     "name": "unity_import_payload_json",
+     "name": "unreal_import_payload_json",
      "type": "STRING",
      "links": [],
      "slot_index": 0
@@ -509,28 +727,71 @@
     }
    ],
    "properties": {
-    "Node name for S&R": "UnityEngineBridgeNode"
+    "Node name for S&R": "UnrealEngineBridgeNode"
    },
    "widgets_values": [
     "127.0.0.1",
-    8080,
-    "Assets/AI_Generated/",
-    true
+    30010,
+    "HTTP Bridge Plugin (Port 30010)",
+    "/Game/Assets/AI_Generated/",
+    100.0,
+    true,
+    true,
+    ""
    ]
+  },
+  {
+   "id": 11,
+   "type": "EngineConnectionCheckNode",
+   "pos": [
+    2940,
+    460
+   ],
+   "size": [
+    400,
+    160
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "engine_online",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "status_message",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EngineConnectionCheckNode"
+   },
+   "widgets_values": [
+    "unreal",
+    "127.0.0.1",
+    30010
+   ],
+   "title": "Verify Unreal Bridge Is Running"
   },
   {
    "id": 60,
    "type": "SunEnvironmentNode",
    "pos": [
-    2460,
-    820
+    2940,
+    680
    ],
    "size": [
     400,
     210
    ],
    "flags": {},
-   "order": 10,
+   "order": 15,
    "mode": 0,
    "inputs": [],
    "outputs": [
@@ -538,7 +799,7 @@
      "name": "environment_json",
      "type": "STRING",
      "links": [
-      11
+      23
      ],
      "slot_index": 0
     },
@@ -562,45 +823,6 @@
     "#FFF4E0"
    ],
    "title": "SUN - sets the DirectionalLight in the engine"
-  },
-  {
-   "id": 11,
-   "type": "EngineConnectionCheckNode",
-   "pos": [
-    2460,
-    620
-   ],
-   "size": [
-    400,
-    160
-   ],
-   "flags": {},
-   "order": 6,
-   "mode": 0,
-   "inputs": [],
-   "outputs": [
-    {
-     "name": "engine_online",
-     "type": "BOOLEAN",
-     "links": [],
-     "slot_index": 0
-    },
-    {
-     "name": "status_message",
-     "type": "STRING",
-     "links": [],
-     "slot_index": 1
-    }
-   ],
-   "properties": {
-    "Node name for S&R": "EngineConnectionCheckNode"
-   },
-   "widgets_values": [
-    "unity",
-    "127.0.0.1",
-    8080
-   ],
-   "title": "Verify Unity Bridge Is Running"
   }
  ],
  "links": [
@@ -629,22 +851,6 @@
    "VAE"
   ],
   [
-   4,
-   2,
-   1,
-   6,
-   3,
-   "STRING"
-  ],
-  [
-   5,
-   2,
-   0,
-   6,
-   4,
-   "STRING"
-  ],
-  [
    6,
    6,
    0,
@@ -653,54 +859,120 @@
    "IMAGE"
   ],
   [
-   7,
+   10,
    2,
    0,
-   8,
+   31,
    1,
-   "STRING"
-  ],
-  [
-   8,
-   8,
-   0,
-   9,
-   0,
-   "STRING"
-  ],
-  [
-   9,
-   9,
-   0,
-   55,
-   0,
-   "STRING"
-  ],
-  [
-   10,
-   55,
-   0,
-   10,
-   0,
    "STRING"
   ],
   [
    11,
+   30,
+   0,
+   31,
+   0,
+   "IMAGE"
+  ],
+  [
+   12,
+   31,
+   1,
+   6,
+   4,
+   "STRING"
+  ],
+  [
+   13,
+   31,
+   2,
+   6,
+   3,
+   "STRING"
+  ],
+  [
+   14,
+   31,
+   1,
+   8,
+   1,
+   "STRING"
+  ],
+  [
+   15,
+   8,
+   0,
+   40,
+   3,
+   "STRING"
+  ],
+  [
+   16,
+   40,
+   0,
+   41,
+   0,
+   "IMAGE"
+  ],
+  [
+   17,
+   40,
+   1,
+   9,
+   0,
+   "STRING"
+  ],
+  [
+   18,
+   9,
+   0,
+   55,
+   0,
+   "STRING"
+  ],
+  [
+   19,
+   55,
+   0,
+   10,
+   0,
+   "STRING"
+  ],
+  [
+   20,
+   1,
+   0,
+   40,
+   0,
+   "MODEL"
+  ],
+  [
+   21,
+   12,
+   0,
+   40,
+   1,
+   "CLIP"
+  ],
+  [
+   22,
+   13,
+   0,
+   40,
+   2,
+   "VAE"
+  ],
+  [
+   23,
    60,
    0,
    10,
-   1,
+   2,
    "STRING"
   ]
  ],
  "groups": [],
  "config": {},
- "extra": {
-  "workflow_info": {
-   "name": "Geekatplay GameAssetMake — Universal 3D Asset Pipeline (Unity)",
-   "author": "Geekatplay Studio — Vladimir Chopine",
-   "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
-  }
- },
+ "extra": {},
  "version": 0.4
 }

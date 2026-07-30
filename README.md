@@ -40,6 +40,24 @@ A main street and cross lane, a square with the well at the crossing, houses set
 
 The Placement Manager reads the terrain heightfield, finds the flattest patch big enough for the scene's built envelope, and moves the **whole layout there as one rigid translation** — street geometry, facings and spacing preserved exactly. Buildings then get a levelled pad; props and trees tilt to follow the slope.
 
+### ✂️ One image → a whole asset pack
+
+![Scene Element Extractor](docs/images/scene-element-extraction.png)
+
+The **✂️ Scene Element Extractor** mines a single environment image for its distinct objects, cuts each one onto a clean white square (matted with GrabCut when OpenCV is installed), and writes a normal asset manifest — the same gallery → 3D → engine chain every other workflow uses picks it up unchanged. **No diffusion models required** for this path.
+
+### 🔄 Orthographic turnarounds
+
+![Orthographic Multi-View](docs/images/orthographic-multiview.png)
+
+The **🔄 Orthographic Multi-View** node renders a front/left/right/back turnaround for every approved asset — all four views share one seed, so they describe one consistent object instead of four different guesses at what the back looks like.
+
+### 🎨 One moodboard, one look
+
+![Style Reference](docs/images/style-reference.png)
+
+The **🎨 Style Reference** node distills a reference image into a compact style sentence and appends it to every asset prompt in the manifest, so a whole generated pack shares one visual identity instead of drifting per-seed.
+
 ---
 
 ## ✨ Key Features
@@ -60,6 +78,9 @@ The Placement Manager reads the terrain heightfield, finds the flattest patch bi
 - 🧊 **In-browser 3D model preview & re-roll** — click any model in the 3D Generator's results panel to open an interactive three.js viewer (orbit/zoom, GLB/GLTF/OBJ/FBX). Don't like it? Tweak engine, format, topology, face count, texture, or rigging right there and hit **Regenerate This Asset** — it reruns just that one mesh against the same approved batch instead of the whole pipeline.
 - 📦 **Unity Editor Bridge** — a single-file Unity Editor script listening on port `8080` that imports models into `Assets/AI_Generated/` and instantiates them into the open scene, with automatic Unreal→Unity unit/axis conversion.
 - 🧪 **Dry-Run Mock Mode** — test the entire pipeline end-to-end with zero API credits spent before going live.
+- ✂️ **One Image → Whole Asset Pack** — the Scene Element Extractor mines a single environment image (concept painting, screenshot, AI render) for its distinct objects — buildings, benches, lamps, crates — cuts each onto a clean white square, and feeds the same gallery → 3D → engine chain. Object positions in the picture become world positions, so the extracted pack re-assembles in the engine like the image. Detection by a local Ollama **vision** model (which also names each object), with a free local blob-analysis fallback; GrabCut matting when OpenCV is installed. **No diffusion models needed** for this path.
+- 🔄 **Orthographic Multi-View turnarounds** — renders a consistent front/left/right/back sheet for every approved asset (same seed across an asset's views, so they describe *one* object). A single 3/4 concept leaves the far side of an asset to the 3D model's imagination; a turnaround pins it down. View paths are written into the manifest for multiview-capable APIs and for your artists.
+- 🎨 **Style Reference (moodboard)** — load one reference image and its art style is distilled into a compact style sentence (Ollama vision, palette-analysis fallback) appended to every asset prompt — the whole pack shares one look instead of drifting per-seed. Works with any diffusion model, no IPAdapter or extra downloads.
 
 ---
 
@@ -116,6 +137,9 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── unreal_bridge_node.py         # ⚡ Unreal Engine Bridge (+ live import checklist)
 │   ├── unity_bridge_node.py          # 📦 Unity Engine Bridge
 │   ├── engine_check_node.py          # 🔌 Engine Connection Check
+│   ├── scene_element_extractor_node.py # ✂️ Scene Element Extractor (one image → asset pack)
+│   ├── multiview_node.py             # 🔄 Orthographic Multi-View (turnaround sheets)
+│   ├── style_reference_node.py       # 🎨 Style Reference (moodboard → consistent style)
 │   └── web_routes.py                 # /gameassetmake/* API: import-status proxy + model file server
 ├── web/
 │   ├── js/gallery_widget.js          # Interactive gallery + 3D preview/regenerate front-end
@@ -139,7 +163,10 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── gameassetmake_textures.json   # Seamless PBR materials
 │   ├── gameassetmake_local_hunyuan3d_unreal.json  # Local 3D (no API) → UE5
 │   ├── gameassetmake_local_hunyuan3d_unity.json   # Local 3D (no API) → Unity
-│   └── gameassetmake_full_scene_unreal.json       # 🎬 Full scene from one prompt
+│   ├── gameassetmake_full_scene_unreal.json       # 🎬 Full scene from one prompt
+│   ├── gameassetmake_image_to_assetpack_unreal.json  # ✂️ One image → asset pack → UE5
+│   ├── gameassetmake_image_to_assetpack_unity.json   # ✂️ One image → asset pack → Unity
+│   └── gameassetmake_styled_multiview_unreal.json    # 🎨🔄 Styled pack + turnarounds → UE5
 └── tools/
     └── validate_workflows.py         # Connection validator (run after editing workflows)
 ```
@@ -232,6 +259,8 @@ The fastest way to try the pipeline: load one of the ready-made workflows from t
 | `gameassetmake_local_hunyuan3d_unreal.json` | **Fully local 3D** via Hunyuan3D 2.1 — no API, no keys, no credits | Unreal Engine 5 |
 | `gameassetmake_local_hunyuan3d_unity.json` | Same, fully local | Unity |
 | `gameassetmake_full_scene_unreal.json` | 🎬 **Full scene from one prompt** — terrain + sky + placed assets, with approval stop | Unreal Engine 5 |
+| `gameassetmake_image_to_assetpack_unreal.json` / `_unity.json` | ✂️ **One image → whole asset pack** — extracts every object from a single environment image, no diffusion models needed | UE5 / Unity |
+| `gameassetmake_styled_multiview_unreal.json` | 🎨🔄 Universal pipeline + **moodboard style lock** + **orthographic turnarounds** per approved asset | Unreal Engine 5 |
 
 Together: **full game assets from a single prompt** — 3D models, terrain, sky, and materials. All preset to **Z-Image Turbo** (8 steps @ cfg 1.0) — benchmarked as the best fit for this job: ~7.5 s/image on an RTX 3090 versus ~27 s for `flux1-dev-fp8`, and the only model tested that reliably produced a single object isolated on pure white.
 

@@ -1,694 +1,718 @@
 {
-  "last_node_id": 60,
-  "last_link_id": 11,
-  "nodes": [
-    {
-      "id": 1,
-      "type": "UNETLoader",
-      "pos": [
-        40,
-        60
-      ],
-      "size": [
-        380,
-        90
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            1
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UNETLoader"
-      },
-      "widgets_values": [
-        "z_image_turbo_bf16.safetensors",
-        "default"
-      ],
-      "title": "Z-Image Turbo (diffusion model)"
-    },
-    {
-      "id": 12,
-      "type": "CLIPLoader",
-      "pos": [
-        40,
-        200
-      ],
-      "size": [
-        380,
-        110
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            2
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPLoader"
-      },
-      "widgets_values": [
-        "qwen_3_4b.safetensors",
-        "lumina2",
-        "default"
-      ],
-      "title": "Text Encoder (Qwen3-4B)"
-    },
-    {
-      "id": 13,
-      "type": "VAELoader",
-      "pos": [
-        40,
-        360
-      ],
-      "size": [
-        380,
-        60
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            3
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "ae.safetensors"
-      ],
-      "title": "VAE (Flux-style 16ch)"
-    },
-    {
-      "id": 2,
-      "type": "GameAssetPlannerNode",
-      "pos": [
-        40,
-        470
-      ],
-      "size": [
-        380,
-        260
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "llm_breakdown_json",
-          "type": "STRING",
-          "link": null,
-          "widget": {
-            "name": "llm_breakdown_json"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "links": [
-            5,
-            7
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "prompt_list_json",
-          "type": "STRING",
-          "links": [
-            4
-          ],
-          "slot_index": 1
-        },
-        {
-          "name": "count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "GameAssetPlannerNode"
-      },
-      "widgets_values": [
-        "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit",
-        12,
-        4,
-        "Stylized Low Poly",
-        0,
-        "fixed",
-        true,
-        "",
-        "http://127.0.0.1:11434",
-        "qwen2.5:7b",
-        "Auto — rig by asset category",
-        "Auto — rig-ready pose when rigging is on"
-      ]
-    },
-    {
-      "id": 6,
-      "type": "BatchConceptGeneratorNode",
-      "pos": [
-        520,
-        200
-      ],
-      "size": [
-        420,
-        560
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 3
-        },
-        {
-          "name": "prompt_list_json",
-          "type": "STRING",
-          "link": 4
-        },
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "link": 5
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            6
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "generation_report_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "image_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "BatchConceptGeneratorNode"
-      },
-      "widgets_values": [
-        "multiple objects, group, collage, grid, reference sheet, text, watermark, cropped, blurry, low quality",
-        1024,
-        1024,
-        8,
-        1.0,
-        "euler",
-        "simple",
-        0,
-        "fixed",
-        16,
-        true,
-        "heuristic+vlm",
-        2,
-        "http://127.0.0.1:11434",
-        "gemma3:12b"
-      ],
-      "title": "🔁 Batch Concept Generator — one image per asset (loops + verifies)"
-    },
-    {
-      "id": 8,
-      "type": "GalleryApprovalNode",
-      "pos": [
-        1020,
-        200
-      ],
-      "size": [
-        420,
-        520
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 6
-        },
-        {
-          "name": "asset_manifest_json",
-          "type": "STRING",
-          "link": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "approved_assets_json",
-          "type": "STRING",
-          "links": [
-            8
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "image_paths_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "approved_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "GalleryApprovalNode"
-      },
-      "widgets_values": [
-        "PAUSE for my approval",
-        ""
-      ]
-    },
-    {
-      "id": 9,
-      "type": "Unified3DGeneratorNode",
-      "pos": [
-        1500,
-        200
-      ],
-      "size": [
-        420,
-        360
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "approved_assets_json",
-          "type": "STRING",
-          "link": 8
-        }
-      ],
-      "outputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "links": [
-            9
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "asset_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "Unified3DGeneratorNode"
-      },
-      "widgets_values": [
-        "tripo",
-        "FBX",
-        "quad",
-        15000,
-        false,
-        "",
-        "",
-        "",
-        "",
-        true
-      ],
-      "title": "3D Generator — pick engine: Tripo / Meshy / HiTem3D (keys auto-load from vault)"
-    },
-    {
-      "id": 55,
-      "type": "AssetPlacementManagerNode",
-      "pos": [
-        1980,
-        40
-      ],
-      "size": [
-        420,
-        260
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "assets_manifest_json",
-          "type": "STRING",
-          "link": 9
-        },
-        {
-          "name": "terrain_manifest_json",
-          "type": "STRING",
-          "link": null
-        },
-        {
-          "name": "skydome_manifest_json",
-          "type": "STRING",
-          "link": null
-        },
-        {
-          "name": "extra_manifest_json",
-          "type": "STRING",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "links": [
-            10
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "placement_report",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "asset_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "AssetPlacementManagerNode"
-      },
-      "widgets_values": [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        12.0
-      ],
-      "title": "PLACEMENT MANAGER - true scale + positions"
-    },
-    {
-      "id": 10,
-      "type": "UnrealEngineBridgeNode",
-      "pos": [
-        2460,
-        200
-      ],
-      "size": [
-        400,
-        320
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "completed_3d_manifest_json",
-          "type": "STRING",
-          "link": 10
-        },
-        {
-          "name": "unreal_project_content_dir",
-          "type": "STRING",
-          "link": null,
-          "widget": {
-            "name": "unreal_project_content_dir"
-          }
-        },
-        {
-          "name": "environment_json",
-          "type": "STRING",
-          "link": 11
-        }
-      ],
-      "outputs": [
-        {
-          "name": "unreal_import_payload_json",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 0
-        },
-        {
-          "name": "imported_count",
-          "type": "INT",
-          "links": [],
-          "slot_index": 1
-        },
-        {
-          "name": "success",
-          "type": "BOOLEAN",
-          "links": [],
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UnrealEngineBridgeNode"
-      },
-      "widgets_values": [
-        "127.0.0.1",
-        30010,
-        "HTTP Bridge Plugin (Port 30010)",
-        "/Game/Assets/AI_Generated/",
-        100.0,
-        true,
-        true,
-        ""
-      ]
-    },
-    {
-      "id": 60,
-      "type": "SunEnvironmentNode",
-      "pos": [
-        2460,
-        820
-      ],
-      "size": [
-        400,
-        210
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "environment_json",
-          "type": "STRING",
-          "links": [
-            11
-          ],
-          "slot_index": 0
-        },
-        {
-          "name": "sun_summary",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SunEnvironmentNode"
-      },
-      "widgets_values": [
-        "summer",
-        "afternoon",
-        "from season + time",
-        200.0,
-        35.0,
-        10.0,
-        "#FFF4E0"
-      ],
-      "title": "SUN - sets the DirectionalLight in the engine"
-    },
-    {
-      "id": 11,
-      "type": "EngineConnectionCheckNode",
-      "pos": [
-        2460,
-        620
-      ],
-      "size": [
-        400,
-        160
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "engine_online",
-          "type": "BOOLEAN",
-          "links": [],
-          "slot_index": 0
-        },
-        {
-          "name": "status_message",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EngineConnectionCheckNode"
-      },
-      "widgets_values": [
-        "unreal",
-        "127.0.0.1",
-        30010
-      ],
-      "title": "Verify Unreal Bridge Is Running"
-    }
-  ],
-  "links": [
-    [
-      1,
-      1,
-      0,
-      6,
-      0,
-      "MODEL"
-    ],
-    [
-      2,
-      12,
-      0,
-      6,
-      1,
-      "CLIP"
-    ],
-    [
-      3,
-      13,
-      0,
-      6,
-      2,
-      "VAE"
-    ],
-    [
-      4,
-      2,
-      1,
-      6,
-      3,
-      "STRING"
-    ],
-    [
-      5,
-      2,
-      0,
-      6,
-      4,
-      "STRING"
-    ],
-    [
-      6,
-      6,
-      0,
-      8,
-      0,
-      "IMAGE"
-    ],
-    [
-      7,
-      2,
-      0,
-      8,
-      1,
-      "STRING"
-    ],
-    [
-      8,
-      8,
-      0,
-      9,
-      0,
-      "STRING"
-    ],
-    [
-      9,
-      9,
-      0,
-      55,
-      0,
-      "STRING"
-    ],
-    [
-      10,
-      55,
-      0,
-      10,
-      0,
-      "STRING"
-    ],
-    [
-      11,
-      60,
-      0,
-      10,
-      2,
-      "STRING"
-    ]
-  ],
-  "groups": [],
-  "config": {},
-  "extra": {
-    "workflow_info": {
-      "name": "Geekatplay GameAssetMake — Universal 3D Asset Pipeline (Unreal)",
-      "author": "Geekatplay Studio — Vladimir Chopine",
-      "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
-    }
+ "last_node_id": 61,
+ "last_link_id": 11,
+ "nodes": [
+  {
+   "id": 61,
+   "type": "MarkdownNote",
+   "pos": [
+    40,
+    -420
+   ],
+   "size": [
+    980,
+    420
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "properties": {},
+   "widgets_values": [
+    "# 🎮 Universal 3D Asset Pipeline — Geekatplay GameAssetMake\n### (c) Geekatplay Studio / Vladimir Chopine — geekatplay.com\n\nOne prompt → a full pack of engine-ready 3D assets. **🎮 Planner** turns the concept into\nan asset manifest (Ollama designs the list when running, prompt-derived fallback otherwise);\n**🔁 Batch Concept Generator** renders ONE image per asset (each with its own seed, verified\nsingle-object-on-white with auto-retry); the **🖼️ Gallery PAUSES the run** so you tick what\nbecomes 3D and what gets rigged; **🧊 3D Generator** meshes the approved set; **📐 Placement\nManager → ⚡ Unreal Bridge** delivers at true scale.\n\n## Key properties\n- **Planner** — `target_asset_count` (how many assets), `environment_pieces` (modular\n  walls/floors/stairs kit, 0 = props+characters only), `art_style` (30+ styles),\n  `rigging` + `character_pose` (auto-riggers need a symmetrical A/T-pose; the 3/4 hero\n  pose fuses limbs and rigs badly — Auto handles this).\n- **Concept seed ships FIXED on purpose** — with randomize, pressing *Approve & Continue*\n  would regenerate different images and pause again. Use the gallery's **Regenerate\n  Images** button when you want new concepts; it rolls the seeds for you.\n- **Guardrail** (`verify_single_object`, on) — heuristic blob check + optional Ollama\n  vision cross-check (`gemma3:12b`); failures retry with a stricter prompt.\n- **Gallery `approval_mode`** — *PAUSE for my approval* (default) stops before any API\n  credit is spent; or auto-approve all / by group.\n- **3D Generator** — one global `engine` choice (Tripo / Meshy / HiTem3D). Keys typed\n  once with `remember_keys` ON go to the **OS credential vault**, never into this JSON.\n  **`dry_run_mock` is ON** — flip to *Live Cloud APIs* to actually generate.\n- **Bridge master toggle** — *Import + Set Up In Scene* places everything; *Import As\n  Assets Only* just fills `/Game/Assets/AI_Generated/`. **☀️ Sun** node configures the DirectionalLight so\n  imports never render black.\n\n## Models required (concepts)\nZ-Image Turbo: `UNETLoader → z_image_turbo_bf16.safetensors`, `CLIPLoader (lumina2) →\nqwen_3_4b.safetensors`, `VAELoader → ae.safetensors` — 8 steps @ cfg 1.0, 16-ch latents.\nBridge must be running (Unreal :30010); the 🔌 check node shows ONLINE/OFFLINE.\n"
+   ],
+   "title": "READ ME — Geekatplay GameAssetMake",
+   "color": "#432",
+   "bgcolor": "#653"
   },
-  "version": 0.4
+  {
+   "id": 1,
+   "type": "UNETLoader",
+   "pos": [
+    40,
+    60
+   ],
+   "size": [
+    380,
+    90
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UNETLoader"
+   },
+   "widgets_values": [
+    "z_image_turbo_bf16.safetensors",
+    "default"
+   ],
+   "title": "Z-Image Turbo (diffusion model)"
+  },
+  {
+   "id": 12,
+   "type": "CLIPLoader",
+   "pos": [
+    40,
+    200
+   ],
+   "size": [
+    380,
+    110
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      2
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPLoader"
+   },
+   "widgets_values": [
+    "qwen_3_4b.safetensors",
+    "lumina2",
+    "default"
+   ],
+   "title": "Text Encoder (Qwen3-4B)"
+  },
+  {
+   "id": 13,
+   "type": "VAELoader",
+   "pos": [
+    40,
+    360
+   ],
+   "size": [
+    380,
+    60
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      3
+     ],
+     "slot_index": 0
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAELoader"
+   },
+   "widgets_values": [
+    "ae.safetensors"
+   ],
+   "title": "VAE (Flux-style 16ch)"
+  },
+  {
+   "id": 2,
+   "type": "GameAssetPlannerNode",
+   "pos": [
+    40,
+    470
+   ],
+   "size": [
+    380,
+    260
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "llm_breakdown_json",
+     "type": "STRING",
+     "link": null,
+     "widget": {
+      "name": "llm_breakdown_json"
+     }
+    }
+   ],
+   "outputs": [
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "links": [
+      5,
+      7
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "prompt_list_json",
+     "type": "STRING",
+     "links": [
+      4
+     ],
+     "slot_index": 1
+    },
+    {
+     "name": "count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "GameAssetPlannerNode"
+   },
+   "widgets_values": [
+    "Retro sci-fi, rocket on an alien planet, pinup girl in a retro sci-fi suit",
+    12,
+    4,
+    "Stylized Low Poly",
+    0,
+    "fixed",
+    true,
+    "",
+    "http://127.0.0.1:11434",
+    "qwen2.5:7b",
+    "Auto — rig by asset category",
+    "Auto — rig-ready pose when rigging is on"
+   ]
+  },
+  {
+   "id": 6,
+   "type": "BatchConceptGeneratorNode",
+   "pos": [
+    520,
+    200
+   ],
+   "size": [
+    420,
+    560
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    },
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 2
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 3
+    },
+    {
+     "name": "prompt_list_json",
+     "type": "STRING",
+     "link": 4
+    },
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "link": 5
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": [
+      6
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "generation_report_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "image_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "BatchConceptGeneratorNode"
+   },
+   "widgets_values": [
+    "multiple objects, group, collage, grid, reference sheet, text, watermark, cropped, blurry, low quality",
+    1024,
+    1024,
+    8,
+    1.0,
+    "euler",
+    "simple",
+    0,
+    "fixed",
+    16,
+    true,
+    "heuristic+vlm",
+    2,
+    "http://127.0.0.1:11434",
+    "gemma3:12b"
+   ],
+   "title": "🔁 Batch Concept Generator — one image per asset (loops + verifies)"
+  },
+  {
+   "id": 8,
+   "type": "GalleryApprovalNode",
+   "pos": [
+    1020,
+    200
+   ],
+   "size": [
+    420,
+    520
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 6
+    },
+    {
+     "name": "asset_manifest_json",
+     "type": "STRING",
+     "link": 7
+    }
+   ],
+   "outputs": [
+    {
+     "name": "approved_assets_json",
+     "type": "STRING",
+     "links": [
+      8
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "image_paths_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "approved_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "GalleryApprovalNode"
+   },
+   "widgets_values": [
+    "PAUSE for my approval",
+    ""
+   ]
+  },
+  {
+   "id": 9,
+   "type": "Unified3DGeneratorNode",
+   "pos": [
+    1500,
+    200
+   ],
+   "size": [
+    420,
+    360
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "approved_assets_json",
+     "type": "STRING",
+     "link": 8
+    }
+   ],
+   "outputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "links": [
+      9
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "asset_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "Unified3DGeneratorNode"
+   },
+   "widgets_values": [
+    "tripo",
+    "FBX",
+    "quad",
+    15000,
+    false,
+    "",
+    "",
+    "",
+    "",
+    true
+   ],
+   "title": "3D Generator — pick engine: Tripo / Meshy / HiTem3D (keys auto-load from vault)"
+  },
+  {
+   "id": 55,
+   "type": "AssetPlacementManagerNode",
+   "pos": [
+    1980,
+    40
+   ],
+   "size": [
+    420,
+    260
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "assets_manifest_json",
+     "type": "STRING",
+     "link": 9
+    },
+    {
+     "name": "terrain_manifest_json",
+     "type": "STRING",
+     "link": null
+    },
+    {
+     "name": "skydome_manifest_json",
+     "type": "STRING",
+     "link": null
+    },
+    {
+     "name": "extra_manifest_json",
+     "type": "STRING",
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "links": [
+      10
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "placement_report",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "asset_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "AssetPlacementManagerNode"
+   },
+   "widgets_values": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    12.0
+   ],
+   "title": "PLACEMENT MANAGER - true scale + positions"
+  },
+  {
+   "id": 10,
+   "type": "UnrealEngineBridgeNode",
+   "pos": [
+    2460,
+    200
+   ],
+   "size": [
+    400,
+    320
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "completed_3d_manifest_json",
+     "type": "STRING",
+     "link": 10
+    },
+    {
+     "name": "unreal_project_content_dir",
+     "type": "STRING",
+     "link": null,
+     "widget": {
+      "name": "unreal_project_content_dir"
+     }
+    },
+    {
+     "name": "environment_json",
+     "type": "STRING",
+     "link": 11
+    }
+   ],
+   "outputs": [
+    {
+     "name": "unreal_import_payload_json",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "imported_count",
+     "type": "INT",
+     "links": [],
+     "slot_index": 1
+    },
+    {
+     "name": "success",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 2
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UnrealEngineBridgeNode"
+   },
+   "widgets_values": [
+    "127.0.0.1",
+    30010,
+    "HTTP Bridge Plugin (Port 30010)",
+    "/Game/Assets/AI_Generated/",
+    100.0,
+    true,
+    true,
+    ""
+   ]
+  },
+  {
+   "id": 60,
+   "type": "SunEnvironmentNode",
+   "pos": [
+    2460,
+    820
+   ],
+   "size": [
+    400,
+    210
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "environment_json",
+     "type": "STRING",
+     "links": [
+      11
+     ],
+     "slot_index": 0
+    },
+    {
+     "name": "sun_summary",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SunEnvironmentNode"
+   },
+   "widgets_values": [
+    "summer",
+    "afternoon",
+    "from season + time",
+    200.0,
+    35.0,
+    10.0,
+    "#FFF4E0"
+   ],
+   "title": "SUN - sets the DirectionalLight in the engine"
+  },
+  {
+   "id": 11,
+   "type": "EngineConnectionCheckNode",
+   "pos": [
+    2460,
+    620
+   ],
+   "size": [
+    400,
+    160
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "engine_online",
+     "type": "BOOLEAN",
+     "links": [],
+     "slot_index": 0
+    },
+    {
+     "name": "status_message",
+     "type": "STRING",
+     "links": [],
+     "slot_index": 1
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EngineConnectionCheckNode"
+   },
+   "widgets_values": [
+    "unreal",
+    "127.0.0.1",
+    30010
+   ],
+   "title": "Verify Unreal Bridge Is Running"
+  }
+ ],
+ "links": [
+  [
+   1,
+   1,
+   0,
+   6,
+   0,
+   "MODEL"
+  ],
+  [
+   2,
+   12,
+   0,
+   6,
+   1,
+   "CLIP"
+  ],
+  [
+   3,
+   13,
+   0,
+   6,
+   2,
+   "VAE"
+  ],
+  [
+   4,
+   2,
+   1,
+   6,
+   3,
+   "STRING"
+  ],
+  [
+   5,
+   2,
+   0,
+   6,
+   4,
+   "STRING"
+  ],
+  [
+   6,
+   6,
+   0,
+   8,
+   0,
+   "IMAGE"
+  ],
+  [
+   7,
+   2,
+   0,
+   8,
+   1,
+   "STRING"
+  ],
+  [
+   8,
+   8,
+   0,
+   9,
+   0,
+   "STRING"
+  ],
+  [
+   9,
+   9,
+   0,
+   55,
+   0,
+   "STRING"
+  ],
+  [
+   10,
+   55,
+   0,
+   10,
+   0,
+   "STRING"
+  ],
+  [
+   11,
+   60,
+   0,
+   10,
+   2,
+   "STRING"
+  ]
+ ],
+ "groups": [],
+ "config": {},
+ "extra": {
+  "workflow_info": {
+   "name": "Geekatplay GameAssetMake — Universal 3D Asset Pipeline (Unreal)",
+   "author": "Geekatplay Studio — Vladimir Chopine",
+   "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
+  }
+ },
+ "version": 0.4
 }
