@@ -118,6 +118,7 @@ Extractor properties, and when to touch them:
 | `matte_on_white` | on | GrabCut cutout onto pure white. Needs `opencv-python`; without it the raw crop is used and busy backgrounds may leak into the mesh. |
 | `detection` | vlm+heuristic | `vlm`: a local Ollama **vision** model (gemma3:12b) finds and **names** the objects — strongly recommended for photos and busy scenes. `heuristic`: free local blob analysis (background estimated from the image border), fine for renders with clear ground/sky. The combined default tries the VLM and falls back. |
 | `art_style` | Stylized Low Poly | Written into each asset's prompt so guardrail retries and regenerations keep the pack's look. |
+| `rigging` | Auto — rig by asset category | Which extracted **characters** get an auto-rigged skeleton (auto / biped / quadruped / none). Only characters are ever rigged; props and level geometry are always static meshes. You can still change it per asset in the approval gallery. |
 | `scene_span_m` | 60 | Real-world width (meters) of the pictured area. Object positions in the image map through this to world positions, so the extracted pack **re-assembles in the engine like the picture**. Sizes are estimated from each object's share of the span; the engine importer still measures the actual mesh bounds and corrects the scale exactly. |
 
 Estimated sizes and positions are deliberately rough — the Placement Manager and the

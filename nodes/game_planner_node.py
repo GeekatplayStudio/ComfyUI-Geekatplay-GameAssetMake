@@ -202,6 +202,42 @@ GENRE_POOLS = {
     },
 }
 
+# LLM category synonyms. Models answer the planner's schema with the word they
+# would naturally use ("character", "monster", "prop") rather than the exact enum,
+# and an unrecognised category used to fall through to name-based guessing — which
+# turned LLM-designed characters into props and stripped their rigging.
+_CATEGORY_ALIASES = {
+    "character": "hero", "protagonist": "hero", "player": "hero", "human": "hero",
+    "humanoid": "hero", "person": "hero", "people": "hero", "figure": "hero",
+    "villager": "npc", "ally": "npc", "friendly": "npc", "merchant": "npc",
+    "vendor": "npc", "civilian": "npc", "quest_giver": "npc",
+    "monster": "enemy", "creature": "enemy", "beast": "enemy", "animal": "enemy",
+    "mob": "enemy", "foe": "enemy", "hostile": "enemy", "undead": "enemy",
+    "miniboss": "boss", "mini_boss": "boss", "final_boss": "boss",
+    "gun": "weapon", "melee": "weapon", "tool": "weapon", "equipment": "weapon",
+    "gear": "weapon", "armor": "weapon", "armour": "weapon",
+    "ship": "vehicle", "transport": "vehicle", "mount": "vehicle",
+    "building": "structure", "architecture": "structure", "landmark": "structure",
+    "terrain": "structure", "scenery": "structure",
+    "prop": "environment_prop", "item": "environment_prop",
+    "object": "environment_prop", "decoration": "environment_prop",
+    "decor": "environment_prop", "furniture": "environment_prop",
+    "vegetation": "environment_prop", "plant": "environment_prop",
+    "nature": "environment_prop", "misc": "environment_prop",
+    "container": "interactable", "pickup": "interactable", "loot": "interactable",
+    "collectible": "interactable", "consumable": "interactable",
+    "usable": "interactable", "puzzle": "interactable",
+}
+
+
+def normalize_category(raw, name):
+    """Map whatever the LLM answered onto a real category, guessing only as a last resort."""
+    cat = str(raw or "").strip().lower().replace(" ", "_").replace("-", "_")
+    if cat in CATEGORY_SPECS:
+        return cat
+    return _CATEGORY_ALIASES.get(cat) or classify_subject(name)
+
+
 # Words that describe STYLE rather than an object, stripped from subject phrases.
 _STYLE_WORDS = {
     "3d", "2d", "game", "style", "styled", "art", "scene", "environment", "level",
@@ -219,17 +255,92 @@ _SETTING_WORDS = {
     "environment", "landscape", "biome",
 }
 
-_CHARACTER_HINTS = ("girl", "woman", "man", "boy", "hero", "heroine", "pilot",
-                    "soldier", "warrior", "knight", "explorer", "captain", "pinup",
-                    "person", "character", "astronaut", "cowboy", "survivor")
-_CREATURE_HINTS = ("alien", "monster", "creature", "beast", "dragon", "spider",
-                   "zombie", "wolf", "insect", "worm", "slime")
+# Hints decide an asset's category, and the category decides its group — which is
+# what the gallery uses to offer auto-rigging. A character that lands outside the
+# "character" group silently loses its rig option, so these lists are deliberately
+# generous about job titles and fantasy archetypes: "Blacksmith", "Sheriff",
+# "Skeleton King" and "Maintenance Robot" are all people, not props.
+_CHARACTER_HINTS = (
+    "girl", "woman", "man", "boy", "hero", "heroine", "pilot", "soldier", "warrior",
+    "knight", "explorer", "captain", "pinup", "person", "character", "astronaut",
+    "cowboy", "survivor", "boss", "child", "human", "elf", "dwarf", "gnome",
+    "halfling", "fairy", "angel", "god", "goddess", "titan",
+    # job titles / roles
+    "elder", "merchant", "vendor", "trader", "blacksmith", "smith", "guard",
+    "guardian", "sentinel", "warden", "villager", "peasant", "farmer", "miner",
+    "baker", "butcher", "innkeeper", "keeper", "owner", "shopkeeper", "bartender",
+    "sailor", "fisherman", "worker", "engineer", "scientist", "doctor", "nurse",
+    "scholar", "sage", "alchemist", "officer", "commander", "general", "chief",
+    "sheriff", "deputy", "marshal", "agent", "detective", "trooper", "marine",
+    "scout", "dancer", "singer", "priest", "monk", "cleric", "nun",
+    # fantasy / rpg archetypes
+    "mage", "wizard", "witch", "sorcerer", "sorceress", "necromancer", "shaman",
+    "druid", "bard", "paladin", "ranger", "archer", "hunter", "thief", "rogue",
+    "assassin", "bandit", "outlaw", "pirate", "gladiator", "samurai", "ninja",
+    "viking", "barbarian", "adventurer", "mercenary", "nomad", "king", "queen",
+    "prince", "princess", "lord", "lady", "baron", "duke", "emperor", "chieftain",
+    # constructed humanoids — biped rigs, not props
+    "robot", "android", "cyborg", "automaton", "droid",
+)
+_CREATURE_HINTS = (
+    "alien", "monster", "creature", "beast", "dragon", "spider", "zombie", "wolf",
+    "insect", "worm", "slime", "goblin", "orc", "troll", "ogre", "skeleton",
+    "ghoul", "ghost", "spirit", "wraith", "banshee", "lich", "vampire", "werewolf",
+    "mummy", "demon", "devil", "golem", "elemental", "gargoyle", "harpy",
+    "minotaur", "centaur", "hydra", "kraken", "griffin", "wyvern", "drake",
+    "serpent", "snake", "lizard", "scorpion", "mutant", "abomination", "hound",
+    "dog", "boar", "bear", "horse", "deer", "bird", "crow", "raven", "fish",
+    "shark", "tentacle", "mimic", "swarm",
+)
 _VEHICLE_HINTS = ("rocket", "ship", "spaceship", "starship", "car", "truck", "tank",
                   "wagon", "boat", "plane", "shuttle", "mech")
 _WEAPON_HINTS = ("sword", "gun", "rifle", "pistol", "blaster", "axe", "bow",
-                 "dagger", "spear", "hammer", "revolver")
+                 "dagger", "spear", "hammer", "revolver", "shield", "crossbow",
+                 "mace", "staff", "wand", "knife", "blade")
 _STRUCTURE_HINTS = ("building", "house", "tower", "castle", "dome", "station",
-                    "base", "temple", "church", "wall", "gate", "bridge", "saloon")
+                    "base", "temple", "church", "wall", "gate", "bridge", "saloon",
+                    "hut", "cabin", "shed", "barn", "fort", "keep", "tomb", "shrine")
+# Explicit prop head-nouns. Without these, "Woman Statue" and "Human Skull" are
+# classified as characters (the person word is the only hint present), get an
+# A-pose concept prompt, and are offered a skeleton in the gallery.
+_PROP_HINTS = (
+    "statue", "skull", "bone", "corpse", "remains", "effigy", "doll", "mannequin",
+    "portrait", "painting", "poster", "banner", "sign", "bust", "totem", "idol",
+    "bowl", "plate", "cup", "mug", "bottle", "jar", "vase", "pot", "crate",
+    "barrel", "chest", "box", "sack", "book", "scroll", "candle", "torch",
+    "lantern", "lamp", "rug", "carpet", "table", "chair", "stool", "bench", "bed",
+    "shelf", "cabinet", "rock", "stone", "boulder", "tree", "bush", "flower",
+    "log", "stump", "fence", "post", "cart", "anvil", "forge", "well", "fountain",
+    # display props built in the SHAPE of a person — a rig would be meaningless
+    "armor", "armour", "stand", "rack", "dummy", "helmet", "mask", "costume",
+)
+
+
+# Humanoid enemies. The "enemy" archetype assumes a quadruped skeleton, which is
+# right for a wolf or a giant spider but wrong for most fantasy enemies: a zombie,
+# orc or lich stands on two legs, and a quadruped rig turns one into a tangle.
+# "giant" is deliberately absent — a Giant Spider is still a spider.
+_BIPED_CREATURE_HINTS = (
+    "zombie", "skeleton", "ghoul", "lich", "vampire", "mummy", "werewolf",
+    "demon", "devil", "goblin", "orc", "troll", "ogre", "golem", "gargoyle",
+    "minotaur", "harpy", "abomination", "mutant", "wraith", "banshee", "ghost",
+    "spirit", "elemental", "alien", "humanoid",
+)
+
+
+def rig_spec_for(category_spec, phrase):
+    """
+    The archetype's skeleton, corrected for humanoid enemies. Returns the spec
+    unchanged for everything that is not a defaulted-to-quadruped enemy.
+    """
+    if category_spec.get("rig") != "quadruped":
+        return category_spec
+    text = str(phrase).lower()
+    if any(re.search(r"\b" + re.escape(h), text) for h in _BIPED_CREATURE_HINTS):
+        biped = dict(category_spec)
+        biped["rig"] = "biped"
+        return biped
+    return category_spec
 
 
 def resolve_rig(category_spec, rig_preset):
@@ -266,19 +377,37 @@ def detect_genre(prompt):
 
 def classify_subject(phrase):
     """
-    Category for a phrase from the prompt. The EARLIEST hint wins, because the
-    head noun leads: "rocket on the alien planet" is a rocket (vehicle), not an
-    alien (enemy) — matching by category order alone got that backwards.
+    Category for a phrase from the prompt or an LLM-supplied asset name.
+
+    Two rules, both of which exist because the obvious approach misclassified
+    characters and cost them their rigging option in the gallery:
+
+    1. Everything from the first preposition on describes the SETTING, not the
+       asset, so it is cut away first: "rocket on the alien planet" is a rocket
+       (vehicle), not an alien (enemy).
+    2. Within what is left, the LAST hint wins, because English compound names
+       put the head noun last: a "Saloon Owner" is an owner (character) who
+       happens to work in a saloon, and a "Skeleton King" is a king. Taking the
+       earliest hint instead classified both as scenery. Ties at the same
+       position go to the longer hint, so "Wooden Bowl" is a bowl, not a bow.
+
+    Hints match at a WORD START only. Plain substring search made "Command
+    Console" a character (because "man" occurs inside "Command") and "Goblin
+    Shaman" matched on the same accident rather than on "shaman".
     """
-    p = phrase.lower()
-    best_cat, best_pos = "environment_prop", len(p) + 1
+    head = re.split(r"\b(?:on|in|at|inside|near|under|over|beside|of|with|for)\b",
+                    phrase.lower(), maxsplit=1)[0]
+    best_cat, best_key = "environment_prop", (-1, 0)
     for cat, hints in (("hero", _CHARACTER_HINTS), ("enemy", _CREATURE_HINTS),
                        ("vehicle", _VEHICLE_HINTS), ("weapon", _WEAPON_HINTS),
-                       ("structure", _STRUCTURE_HINTS)):
+                       ("structure", _STRUCTURE_HINTS),
+                       ("environment_prop", _PROP_HINTS)):
         for h in hints:
-            pos = p.find(h)
-            if pos != -1 and pos < best_pos:
-                best_cat, best_pos = cat, pos
+            last = None
+            for match in re.finditer(r"\b" + re.escape(h), head):
+                last = match
+            if last is not None and (last.start(), len(h)) > best_key:
+                best_cat, best_key = cat, (last.start(), len(h))
     return best_cat
 
 
@@ -376,9 +505,7 @@ def ollama_asset_plan(prompt, count, art_style, url, model, seed):
             name = str(item.get("name", "")).strip()
             if not name:
                 continue
-            cat = str(item.get("category", "environment_prop")).strip()
-            if cat not in CATEGORY_SPECS:
-                cat = classify_subject(name)
+            cat = normalize_category(item.get("category"), name)
             out.append({"name": title_case(name), "category": cat,
                         "description": str(item.get("description", "")).strip()})
         return out or None
@@ -519,7 +646,7 @@ class GameAssetPlannerNode:
             subject = entry["name"] if desc.lower() == entry["name"].lower() else f"{entry['name']}, {desc}"
 
             group = spec.get("group", "accessory")
-            rig_type, include_rigging = resolve_rig(spec, rigging)
+            rig_type, include_rigging = resolve_rig(rig_spec_for(spec, subject), rigging)
 
             if group == "environment":
                 asset_prompt = (

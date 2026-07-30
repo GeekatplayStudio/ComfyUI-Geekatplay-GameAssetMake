@@ -130,7 +130,8 @@
     "Stylized Low Poly",
     60.0,
     "http://127.0.0.1:11434",
-    "gemma3:12b"
+    "gemma3:12b",
+    "Auto — rig by asset category"
    ],
    "title": "✂️ Scene Element Extractor — one image → asset pack"
   },

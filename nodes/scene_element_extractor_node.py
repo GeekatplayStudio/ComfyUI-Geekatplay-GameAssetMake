@@ -46,7 +46,14 @@ try:
 except ImportError:
     _HAVE_CV2 = False
 
-from .game_planner_node import classify_subject, title_case, CATEGORY_SPECS
+from .game_planner_node import (
+    classify_subject,
+    title_case,
+    CATEGORY_SPECS,
+    RIG_PRESETS,
+    resolve_rig,
+    rig_spec_for,
+)
 
 
 def _tensor_to_png_b64(img_np_u8):
@@ -255,6 +262,15 @@ class SceneElementExtractorNode:
             "optional": {
                 "ollama_url": ("STRING", {"default": "http://127.0.0.1:11434"}),
                 "ollama_model": ("STRING", {"default": "gemma3:12b"}),
+                # Appended at the END on purpose: widgets_values is a positional
+                # array, so inserting this anywhere else would shift every value
+                # in workflows saved before it existed.
+                "rigging": (list(RIG_PRESETS), {
+                    "default": "Auto — rig by asset category",
+                    "tooltip": "Which extracted characters get an auto-rigged skeleton. "
+                               "Only characters are ever rigged — props and level geometry "
+                               "are always static meshes. You can still change this per "
+                               "asset in the approval gallery."}),
             },
         }
 
@@ -267,7 +283,8 @@ class SceneElementExtractorNode:
                          crop_padding_pct=8.0, output_size=1024, matte_on_white=True,
                          detection="vlm+heuristic", art_style="Stylized Low Poly",
                          scene_span_m=60.0,
-                         ollama_url="http://127.0.0.1:11434", ollama_model="gemma3:12b"):
+                         ollama_url="http://127.0.0.1:11434", ollama_model="gemma3:12b",
+                         rigging="Auto — rig by asset category"):
         arr01 = image[0].cpu().numpy()  # [H, W, C] in 0..1 — first image of the batch
         h, w = arr01.shape[:2]
         img_u8 = np.clip(arr01 * 255.0, 0, 255).astype(np.uint8)
@@ -330,6 +347,10 @@ class SceneElementExtractorNode:
                 category = classify_subject(name)
             spec = CATEGORY_SPECS.get(category, CATEGORY_SPECS["environment_prop"])
             group = spec.get("group", "accessory")
+            # An extracted person is still a character: give it the rig its
+            # category implies, exactly as the text planner does, or the gallery
+            # offers a skeleton that nothing downstream was set up to request.
+            rig_type, include_rigging = resolve_rig(rig_spec_for(spec, name), rigging)
 
             # Estimate real size from the object's share of the pictured scene.
             # Rough by design — the Placement Manager and the engine importer
@@ -352,9 +373,9 @@ class SceneElementExtractorNode:
                            f"isolated on pure white background, {art_style} style 3D game "
                            f"asset concept art, production ready, no text, no reference sheet"),
                 "engine_target": "tripo",
-                "rig_type": "none",
+                "rig_type": rig_type,
                 "include_texture": True,
-                "include_rigging": False,
+                "include_rigging": include_rigging,
                 "target_size_m": target_size,
                 "scale_override": [1.0, 1.0, 1.0],
                 "collision_type": spec["collision"],
