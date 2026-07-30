@@ -166,7 +166,9 @@
         true,
         "",
         "http://127.0.0.1:11434",
-        "qwen2.5:7b"
+        "qwen2.5:7b",
+        "Auto — rig by asset category",
+        "Auto — rig-ready pose when rigging is on"
       ]
     },
     {
@@ -250,9 +252,9 @@
         "heuristic+vlm",
         2,
         "http://127.0.0.1:11434",
-        "gemma3"
+        "gemma3:12b"
       ],
-      "title": "\ud83d\udd01 Batch Concept Generator - one image per asset (loops + verifies)"
+      "title": "🔁 Batch Concept Generator - one image per asset (loops + verifies)"
     },
     {
       "id": 8,
@@ -428,7 +430,7 @@
         8000,
         "center"
       ],
-      "title": "\ud83d\udda5 Local 3D Generator - Hunyuan3D 2.1 (no API, no credits)"
+      "title": "🖥 Local 3D Generator - Hunyuan3D 2.1 (no API, no credits)"
     },
     {
       "id": 21,
@@ -518,7 +520,11 @@
       "widgets_values": [
         true,
         true,
-        true
+        true,
+        true,
+        true,
+        true,
+        12.0
       ],
       "title": "PLACEMENT MANAGER - true scale + positions"
     },
@@ -781,8 +787,8 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Local 3D Asset Pipeline - Hunyuan3D (Unity)",
-      "author": "Geekatplay Studio \u2014 Vladimir Chopine",
+      "name": "Geekatplay GameAssetMake — Local 3D Asset Pipeline - Hunyuan3D (Unity)",
+      "author": "Geekatplay Studio — Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }
   },

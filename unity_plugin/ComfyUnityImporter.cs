@@ -26,9 +26,12 @@ namespace GeekatplayGameForge
         public float[] scale_override;
         public float[] world_placement_offset;
         public float world_rotation_yaw;
+        public float world_rotation_pitch;
+        public float world_rotation_roll;
         public float[] target_size_m;
         public bool normalize_to_target;
         public float ground_z_cm;
+        public string placement_role;
     }
 
     [Serializable]
@@ -225,10 +228,19 @@ namespace GeekatplayGameForge
                         instance.transform.localScale = new Vector3(
                             meta.scale_override[0], meta.scale_override[2], meta.scale_override[1]);
                     }
-                    // Unreal yaw (about Z-up) maps to Unity rotation about Y-up
-                    if (Mathf.Abs(meta.world_rotation_yaw) > 0.01f)
+                    // Unreal is Z-up, Unity is Y-up: yaw (about Unreal Z) becomes a
+                    // rotation about Unity Y, pitch (about Unreal Y) about Unity X, and
+                    // roll (about Unreal X) about Unity Z. Pitch/roll are the terrain
+                    // normal under the asset, so props follow the slope; buildings are
+                    // sent as 0/0 and stay upright.
+                    if (Mathf.Abs(meta.world_rotation_yaw) > 0.01f
+                        || Mathf.Abs(meta.world_rotation_pitch) > 0.01f
+                        || Mathf.Abs(meta.world_rotation_roll) > 0.01f)
                     {
-                        instance.transform.rotation = Quaternion.Euler(0f, meta.world_rotation_yaw, 0f);
+                        instance.transform.rotation = Quaternion.Euler(
+                            meta.world_rotation_pitch,
+                            meta.world_rotation_yaw,
+                            meta.world_rotation_roll);
                     }
 
                     // Placement Manager normalization: measure the mesh and scale it

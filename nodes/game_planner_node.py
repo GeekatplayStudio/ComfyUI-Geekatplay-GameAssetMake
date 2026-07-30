@@ -28,6 +28,36 @@ ART_STYLES = [
     "Oriental / East Asian", "Watercolor Stylized", "Papercraft",
 ]
 
+# --- Character & rigging presets -------------------------------------------
+# An auto-rigger (Tripo / Meshy) needs a symmetrical, full-body, straight-on
+# reference. A 3/4 "hero pose" with the arms against the torso is what most
+# concept prompts produce, and it rigs badly: limbs fuse to the body and the
+# skeleton comes out twisted. So the pose that gets baked into the image prompt
+# follows the rigging decision instead of being the same for every asset.
+RIG_PRESETS = {
+    "Auto — rig by asset category": "auto",
+    "Biped for every character": "biped",
+    "Quadruped for every character": "quadruped",
+    "No rigging (static meshes only)": "none",
+}
+
+POSE_PRESETS = {
+    "Auto — rig-ready pose when rigging is on": "auto",
+    "A-pose (arms lowered — best for auto-rig)": "apose",
+    "T-pose (arms straight out)": "tpose",
+    "Relaxed 3/4 hero pose (not rig-friendly)": "free",
+}
+
+POSE_TEXT = {
+    "apose": ("full body from head to toe, symmetrical A-pose with both arms lowered "
+              "and held clear of the torso, legs slightly apart, facing the camera "
+              "straight on, neutral expression, nothing covering the arms or legs"),
+    "tpose": ("full body from head to toe, symmetrical T-pose with both arms straight "
+              "out horizontally, legs together, facing the camera straight on, neutral "
+              "expression, nothing covering the arms or legs"),
+    "free":  "3/4 view facing the camera, full body in frame",
+}
+
 # Category archetypes: rig, collision and a sensible real-world size (metres)
 # group: "character" (auto-riggable) | "accessory" (props) | "environment" (level geometry)
 CATEGORY_SPECS = {
@@ -200,6 +230,28 @@ _WEAPON_HINTS = ("sword", "gun", "rifle", "pistol", "blaster", "axe", "bow",
                  "dagger", "spear", "hammer", "revolver")
 _STRUCTURE_HINTS = ("building", "house", "tower", "castle", "dome", "station",
                     "base", "temple", "church", "wall", "gate", "bridge", "saloon")
+
+
+def resolve_rig(category_spec, rig_preset):
+    """(rig_type, include_rigging) for one asset under the chosen rigging preset."""
+    mode = RIG_PRESETS.get(rig_preset, "auto")
+    # Only characters are ever auto-rigged: a rigged crate is meaningless and
+    # costs an extra API call per asset. Every non-character category already
+    # carries rig "none" in CATEGORY_SPECS.
+    if mode == "none" or category_spec.get("group") != "character":
+        return "none", False
+    if mode in ("biped", "quadruped"):
+        return mode, True
+    rig = category_spec["rig"]
+    return rig, rig != "none"
+
+
+def resolve_pose(pose_preset, include_rigging):
+    """Pose wording for a character image, following the rigging decision on Auto."""
+    mode = POSE_PRESETS.get(pose_preset, "auto")
+    if mode == "auto":
+        mode = "apose" if include_rigging else "free"
+    return POSE_TEXT.get(mode, POSE_TEXT["free"])
 
 
 def detect_genre(prompt):
@@ -400,6 +452,19 @@ class GameAssetPlannerNode:
                 "llm_breakdown_json": ("STRING", {"multiline": True, "default": ""}),
                 "ollama_url": ("STRING", {"default": "http://127.0.0.1:11434"}),
                 "ollama_model": ("STRING", {"default": "qwen2.5:7b"}),
+                # Appended at the END of the optional block on purpose: widgets_values
+                # is a positional array, so inserting these anywhere else would shift
+                # every value in workflows that were saved before they existed.
+                "rigging": (list(RIG_PRESETS), {
+                    "default": "Auto — rig by asset category",
+                    "tooltip": "Which characters get an auto-rigged skeleton. Only "
+                               "characters are ever rigged — props and level geometry "
+                               "are always static meshes."}),
+                "character_pose": (list(POSE_PRESETS), {
+                    "default": "Auto — rig-ready pose when rigging is on",
+                    "tooltip": "Pose requested in the concept image for characters. "
+                               "Auto-riggers need a symmetrical full-body A/T-pose; a "
+                               "3/4 hero pose fuses the limbs to the torso and rigs badly."}),
             }
         }
 
@@ -410,7 +475,9 @@ class GameAssetPlannerNode:
 
     def plan_assets(self, game_concept_prompt, target_asset_count, art_style, seed,
                     environment_pieces=4, use_ollama=True, llm_breakdown_json="",
-                    ollama_url="http://127.0.0.1:11434", ollama_model="qwen2.5:7b"):
+                    ollama_url="http://127.0.0.1:11434", ollama_model="qwen2.5:7b",
+                    rigging="Auto — rig by asset category",
+                    character_pose="Auto — rig-ready pose when rigging is on"):
         rng = random.Random(seed)
 
         # 1. An upstream planner (e.g. the Scene Director) wins outright.
@@ -451,24 +518,38 @@ class GameAssetPlannerNode:
             desc = (entry.get("description") or entry["name"]).strip()
             subject = entry["name"] if desc.lower() == entry["name"].lower() else f"{entry['name']}, {desc}"
 
+            group = spec.get("group", "accessory")
+            rig_type, include_rigging = resolve_rig(spec, rigging)
+
+            if group == "environment":
+                asset_prompt = (
+                    f"single modular {subject}, one game-kit piece only, straight-on 3/4 view, "
+                    f"isolated on pure white background, {art_style} style 3D game asset, "
+                    f"flat clean edges so it tiles with neighbouring pieces, "
+                    f"no text, no reference sheet")
+            elif group == "character":
+                # The pose is what makes or breaks auto-rigging, so it leads the prompt.
+                asset_prompt = (
+                    f"single {subject}, one character only, "
+                    f"{resolve_pose(character_pose, include_rigging)}, "
+                    f"isolated on pure white background, {art_style} style 3D game "
+                    f"asset concept art, production ready, no text, no reference sheet")
+            else:
+                asset_prompt = (
+                    f"single {subject}, one object only, 3/4 view facing the camera, "
+                    f"isolated on pure white background, {art_style} style 3D game "
+                    f"asset concept art, production ready, no text, no reference sheet")
+
             manifest.append({
                 "id": f"asset_{idx:02d}",
                 "name": entry["name"],
                 "category": cat,
-                "asset_group": spec.get("group", "accessory"),
-                "prompt": (
-                    (f"single modular {subject}, one game-kit piece only, straight-on 3/4 view, "
-                     f"isolated on pure white background, {art_style} style 3D game asset, "
-                     f"flat clean edges so it tiles with neighbouring pieces, "
-                     f"no text, no reference sheet")
-                    if spec.get("group") == "environment" else
-                    (f"single {subject}, one object only, 3/4 view facing the camera, "
-                     f"isolated on pure white background, {art_style} style 3D game "
-                     f"asset concept art, production ready, no text, no reference sheet")),
+                "asset_group": group,
+                "prompt": asset_prompt,
                 "engine_target": "tripo",
-                "rig_type": spec["rig"],
+                "rig_type": rig_type,
                 "include_texture": True,
-                "include_rigging": spec["rig"] != "none",
+                "include_rigging": include_rigging,
                 "target_size_m": size,
                 "scale_override": [1.0, 1.0, 1.0],
                 "collision_type": spec["collision"],
@@ -481,8 +562,16 @@ class GameAssetPlannerNode:
             })
 
         prompt_list = [item["prompt"] for item in manifest]
+        rigged = [m for m in manifest if m["include_rigging"]]
         print(f"[Asset Planner] {len(manifest)} assets planned: "
               f"{', '.join(m['name'] for m in manifest[:6])}"
               f"{' ...' if len(manifest) > 6 else ''}")
+        if rigged:
+            kinds = sorted({m["rig_type"] for m in rigged})
+            print(f"[Asset Planner] Rigging '{rigging}' -> {len(rigged)} character(s) "
+                  f"as {'/'.join(kinds)}; pose preset '{character_pose}'.")
+        else:
+            print(f"[Asset Planner] Rigging '{rigging}' -> no rigged assets "
+                  f"(all static meshes).")
 
         return (json.dumps(manifest, indent=2), json.dumps(prompt_list, indent=2), len(manifest))

@@ -164,16 +164,21 @@ def _spawn_placed(editor_actor_subsystem, obj, asset, scale_factor, unit_scale=T
     pos = asset.get("location", [0.0, 0.0, 0.0])
     sc = asset.get("scale", [1.0, 1.0, 1.0])
     yaw = float(asset.get("rotation_yaw", 0.0))
+    # Pitch/roll come from the terrain normal under the asset, so props and trees
+    # lie along the slope. Buildings are sent with 0/0 and stay upright.
+    pitch = float(asset.get("rotation_pitch", 0.0))
+    roll = float(asset.get("rotation_roll", 0.0))
 
     k = scale_factor / 100.0 if unit_scale else 1.0
     location = unreal.Vector(pos[0] * k, pos[1] * k, pos[2] * k)
-    rotation = unreal.Rotator(0.0, 0.0, yaw)  # roll, pitch, yaw
+    rotation = unreal.Rotator(roll, pitch, yaw)  # roll, pitch, yaw
 
     actor = editor_actor_subsystem.spawn_actor_from_object(obj, location, rotation)
     if actor:
         actor.set_actor_scale_3d(unreal.Vector(sc[0], sc[1], sc[2]))
         actor.set_actor_label(asset.get("name", "GeneratedAsset"))
-        unreal.log(f"[GameAssetMake] Placed '{asset.get('name')}' at {location} yaw={yaw}")
+        unreal.log(f"[GameAssetMake] Placed '{asset.get('name')}' at {location} "
+                   f"yaw={yaw} pitch={pitch} roll={roll}")
     return actor
 
 

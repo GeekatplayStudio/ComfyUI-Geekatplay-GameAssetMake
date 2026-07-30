@@ -511,8 +511,7 @@
         0.8,
         0.0,
         0,
-        "fixed",
-        null
+        "fixed"
       ],
       "title": "TERRAIN UPSCALER - hi-res + antialiased"
     },
@@ -995,7 +994,11 @@
       "widgets_values": [
         true,
         true,
-        true
+        true,
+        true,
+        true,
+        true,
+        12.0
       ],
       "title": "PLACEMENT MANAGER - verifies terrain world size"
     },
@@ -1402,8 +1405,8 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Terrain Mesh from Description (Unity)",
-      "author": "Geekatplay Studio \u2014 Vladimir Chopine",
+      "name": "Geekatplay GameAssetMake — Terrain Mesh from Description (Unity)",
+      "author": "Geekatplay Studio — Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }
   },

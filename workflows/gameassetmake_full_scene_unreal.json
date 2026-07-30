@@ -1,6 +1,6 @@
 {
   "last_node_id": 55,
-  "last_link_id": 50,
+  "last_link_id": 51,
   "nodes": [
     {
       "id": 1,
@@ -184,7 +184,8 @@
           "name": "scene_layout_json",
           "type": "STRING",
           "links": [
-            2
+            2,
+            51
           ],
           "slot_index": 4
         },
@@ -215,7 +216,8 @@
         "fixed",
         true,
         "http://127.0.0.1:11434",
-        "qwen2.5:7b"
+        "qwen2.5:7b",
+        "auto"
       ],
       "title": "SCENE DIRECTOR - season/time aware (try: sunset in winter)"
     },
@@ -354,7 +356,9 @@
         false,
         "",
         "http://127.0.0.1:11434",
-        "qwen2.5:7b"
+        "qwen2.5:7b",
+        "Auto — rig by asset category",
+        "Auto — rig-ready pose when rigging is on"
       ],
       "title": "Asset Planner (manifest from Scene Director layout)"
     },
@@ -1503,6 +1507,11 @@
           "name": "extra_manifest_json",
           "type": "STRING",
           "link": null
+        },
+        {
+          "name": "scene_layout_json",
+          "type": "STRING",
+          "link": 51
         }
       ],
       "outputs": [
@@ -1533,7 +1542,11 @@
       "widgets_values": [
         true,
         true,
-        true
+        true,
+        true,
+        true,
+        true,
+        12.0
       ],
       "title": "PLACEMENT MANAGER - order, true scale, terrain snap, overlaps"
     },
@@ -2046,14 +2059,22 @@
       10,
       2,
       "STRING"
+    ],
+    [
+      51,
+      30,
+      4,
+      55,
+      4,
+      "STRING"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 FULL SCENE from one prompt (Unreal, season/time aware)",
-      "author": "Geekatplay Studio \u2014 Vladimir Chopine",
+      "name": "Geekatplay GameAssetMake — FULL SCENE from one prompt (Unreal, season/time aware)",
+      "author": "Geekatplay Studio — Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }
   },

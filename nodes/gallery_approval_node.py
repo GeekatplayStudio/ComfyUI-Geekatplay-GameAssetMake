@@ -4,6 +4,7 @@
 # =============================================================
 import os
 import json
+import time
 import hashlib
 import numpy as np
 from PIL import Image
@@ -33,6 +34,31 @@ def batch_signature(images, manifest):
     return h.hexdigest()[:16]
 
 GALLERY_SUBFOLDER = "geekatplay_gallery"
+
+# Thumbnails older than this are removed on every run. Concept images are
+# written under a content-addressed name (see below), so nothing ever reuses a
+# filename and the browser can't serve a stale picture — but that also means
+# the folder would grow forever without a sweep.
+STALE_THUMBNAIL_AGE_SECONDS = 24 * 60 * 60
+
+
+def purge_stale_thumbnails(output_dir, keep_filenames):
+    """
+    Drop old concept images. Deliberately age-based rather than
+    per-node: two browser tabs running the same workflow share a node id, so
+    deleting "this node's other files" would wipe the other tab's gallery.
+    """
+    now = time.time()
+    keep = set(keep_filenames)
+    for name in os.listdir(output_dir):
+        if not name.startswith("concept_") or name in keep:
+            continue
+        path = os.path.join(output_dir, name)
+        try:
+            if now - os.path.getmtime(path) > STALE_THUMBNAIL_AGE_SECONDS:
+                os.remove(path)
+        except OSError:
+            pass  # in use by another tab, or already gone
 
 
 class GalleryApprovalNode:
@@ -86,6 +112,13 @@ class GalleryApprovalNode:
         os.makedirs(output_dir, exist_ok=True)
         batch_size = images.shape[0]
 
+        # The signature fingerprints THIS batch of images, so it is computed
+        # before they are written and used in the filenames. Previously every
+        # run overwrote the same `concept_asset_<node>_<i>.png`, which meant
+        # (a) the browser kept showing the cached previous render and (b) two
+        # tabs on the same workflow silently overwrote each other's concepts.
+        sig = batch_signature(images, manifest)
+
         saved_image_paths = []
         saved_image_files = []
         for i in range(batch_size):
@@ -93,11 +126,13 @@ class GalleryApprovalNode:
             img_np = np.clip(img_tensor.cpu().numpy() * 255.0, 0, 255).astype(np.uint8)
             pil_img = Image.fromarray(img_np)
 
-            filename = f"concept_asset_{unique_id or '0'}_{i:03d}.png"
+            filename = f"concept_{unique_id or '0'}_{sig}_{i:03d}.png"
             filepath = os.path.join(output_dir, filename)
             pil_img.save(filepath)
             saved_image_paths.append(filepath)
             saved_image_files.append(filename)
+
+        purge_stale_thumbnails(output_dir, saved_image_files)
 
         approved_manifest = []
         approved_paths = []
@@ -121,7 +156,6 @@ class GalleryApprovalNode:
                   f"only the first {min(len(saved_image_paths), len(manifest))} will be used. "
                   f"Use the Batch Concept Generator (one image per asset) to keep these in sync.")
 
-        sig = batch_signature(images, manifest)
         approved_sig = manual_override.get("__batch__") if manual_override else None
         selections = {k: v for k, v in (manual_override or {}).items() if not k.startswith("__")}
         # An approval only counts for the batch it was made on: regenerate the
@@ -164,6 +198,7 @@ class GalleryApprovalNode:
                 "filename": img_file,
                 "subfolder": GALLERY_SUBFOLDER,
                 "type": "temp",
+                "cache_key": sig,   # appended to the /view URL so reloads never hit a cached image
             })
 
             if has_approval:

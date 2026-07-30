@@ -111,7 +111,7 @@ class BatchConceptGeneratorNode:
                 "verification": (["heuristic", "vlm", "heuristic+vlm"], {"default": "heuristic+vlm"}),
                 "max_retries": ("INT", {"default": 2, "min": 0, "max": 5}),
                 "ollama_url": ("STRING", {"default": "http://127.0.0.1:11434"}),
-                "ollama_model": ("STRING", {"default": "gemma3"}),
+                "ollama_model": ("STRING", {"default": "gemma3:12b"}),
             },
         }
 
@@ -151,7 +151,7 @@ class BatchConceptGeneratorNode:
                        sampler_name="euler", scheduler="simple", seed=0, latent_channels=16,
                        asset_manifest_json="", verify_single_object=True,
                        verification="heuristic+vlm", max_retries=2,
-                       ollama_url="http://127.0.0.1:11434", ollama_model="gemma3"):
+                       ollama_url="http://127.0.0.1:11434", ollama_model="gemma3:12b"):
         items = parse_prompt_items(prompt_list_json, asset_manifest_json)
         if not items:
             raise RuntimeError(

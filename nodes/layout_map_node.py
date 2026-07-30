@@ -85,8 +85,62 @@ class LayoutMapPreviewNode:
                 px, py = to_px(m, 0)
                 draw.text((px + 2, S / 2 + 2), f"{m:.0f}m", fill=(120, 126, 140), font=font)
 
+        # --- layout structure: streets, plazas, rooms, corridors ---
+        # Drawn under the markers so the plan is readable as a place — a village
+        # with streets, a dungeon with rooms — instead of a cloud of dots.
+        plan = layout.get("layout_plan") or {}
+
+        def m_to_px_len(v_m):
+            return max(1.0, (v_m / size_m) * S * 0.9)
+
+        for road in plan.get("roads", []):
+            pts = [to_px(px, py) for px, py in road.get("points", [])]
+            if len(pts) < 2:
+                continue
+            w = m_to_px_len(float(road.get("width_m", 6.0)))
+            draw.line([c for p in pts for c in p], fill=(74, 66, 54), width=int(w))
+            draw.line([c for p in pts for c in p], fill=(104, 92, 74), width=max(1, int(w * 0.12)))
+
+        for plaza in plan.get("plazas", []):
+            cx_m, cy_m = plaza.get("center", [0, 0])
+            pr = m_to_px_len(float(plaza.get("radius_m", 5.0)))
+            px, py = to_px(cx_m, cy_m)
+            draw.ellipse([px - pr, py - pr, px + pr, py + pr],
+                         fill=(58, 54, 46), outline=(112, 104, 86), width=2)
+
+        for corr in plan.get("corridors", []):
+            pts = [to_px(px, py) for px, py in corr.get("points", [])]
+            if len(pts) < 2:
+                continue
+            draw.line([c for p in pts for c in p], fill=(58, 60, 70),
+                      width=int(m_to_px_len(float(corr.get("width_m", 3.0)))))
+
+        for room in plan.get("rooms", []):
+            x0, y0, x1, y1 = room.get("rect", [0, 0, 0, 0])
+            a, b = to_px(x0, y1), to_px(x1, y0)      # y flips on the map
+            draw.rectangle([a[0], a[1], b[0], b[1]],
+                           fill=(44, 46, 56), outline=(120, 126, 142), width=2)
+            if show_labels and room.get("name"):
+                draw.text((a[0] + 4, a[1] + 3), room["name"], fill=(150, 156, 172), font=font)
+
         # --- assets ---
         r = max(5, S // 110)
+        # Labels are decluttered: a dense scene stacks 20 captions on top of each
+        # other and the map becomes unreadable. Landmarks and buildings get first
+        # claim on the space, then props fill in wherever there is still room.
+        label_anchors = []
+        min_label_gap = max(14, S // 46)
+
+        def claim_label_slot(px, py):
+            for ax, ay in label_anchors:
+                if abs(px - ax) < min_label_gap * 4 and abs(py - ay) < min_label_gap:
+                    return False
+            label_anchors.append((px, py))
+            return True
+
+        role_rank = {"landmark": 0, "building": 1, "character": 2, "prop": 3, "vegetation": 4}
+        assets = sorted(assets, key=lambda a: role_rank.get(a.get("placement_role"), 3))
+
         for a in assets:
             x_m, y_m = a.get("position_m", [0, 0])
             yaw = float(a.get("yaw_deg", 0.0))
@@ -108,7 +162,7 @@ class LayoutMapPreviewNode:
             ay = py - math.sin(math.radians(yaw)) * foot * 1.6
             draw.line([px, py, ax, ay], fill=color, width=2)
 
-            if show_labels:
+            if show_labels and claim_label_slot(px + foot + 3, py - r):
                 label = f"{a.get('name', '?')} ({x_m:.0f}, {y_m:.0f})"
                 draw.text((px + foot + 3, py - r), label, fill=(225, 228, 235), font=font)
 

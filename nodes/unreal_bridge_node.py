@@ -100,10 +100,17 @@ class UnrealEngineBridgeNode:
                 "collision": item.get("collision_type", "box"),
                 "location": item.get("world_placement_offset", [0.0, 0.0, 0.0]),
                 "rotation_yaw": item.get("world_rotation_yaw", 0.0),
+                # Terrain-following tilt from the Placement Manager (0 for buildings)
+                "rotation_pitch": item.get("world_rotation_pitch", 0.0),
+                "rotation_roll": item.get("world_rotation_roll", 0.0),
                 # Placement Manager fields: intended real-world size + normalization
                 "target_size_m": item.get("target_size_m"),
                 "normalize_to_target": item.get("normalize_to_target", False),
                 "ground_z_cm": item.get("ground_z_cm"),
+                "ground_slope_deg": item.get("ground_slope_deg"),
+                "placement_role": item.get("placement_role"),
+                # Requested levelled pad under a building (engine-side terrain edit)
+                "terrain_pad": item.get("terrain_pad"),
                 "verify_world_size": item.get("verify_world_size", False),
                 "terrain_world_size_m": item.get("terrain_world_size_m"),
                 # separate colour map so the engine can build an explicit material

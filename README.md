@@ -22,15 +22,38 @@ It does **not** generate gameplay logic, levels, or code — it makes the **asse
 
 ---
 
+## 📸 Screenshots
+
+### Scene layouts that read as places
+
+The 🎬 Scene Director lays a scene out from a **structured template**, and the 🗺️ Layout Map renders the plan as a top-down map — with the streets, squares, rooms and corridors drawn — so you can check the layout *before* generating a single image.
+
+| Village — streets, square, houses facing the road | Dungeon — chambers joined by corridors |
+|---|---|
+| ![Village layout](docs/images/layout-village.png) | ![Dungeon layout](docs/images/layout-dungeon.png) |
+
+A main street and cross lane, a square with the well at the crossing, houses set back from the kerb and **facing** it, the church closing the far end — versus a grid of chambers linked by corridors, the altar in the centre chamber, pillars inset in the room corners and doorway frames at every corridor mouth.
+
+### Fitting the scene to the terrain
+
+![Terrain fitting](docs/images/terrain-fitting.png)
+
+The Placement Manager reads the terrain heightfield, finds the flattest patch big enough for the scene's built envelope, and moves the **whole layout there as one rigid translation** — street geometry, facings and spacing preserved exactly. Buildings then get a levelled pad; props and trees tilt to follow the slope.
+
+---
+
 ## ✨ Key Features
 
-- 🎬 **Full Scene From One Prompt** — the Scene Director node turns *"medieval village at sunset in winter"* into a coordinated plan: positioned asset layout (meters + rotations, planned by a local Ollama LLM with a deterministic fallback), seasonal terrain texture baked onto a real walkable terrain mesh, a matching skydome, and the **sun position computed for that season and time of day** — set as a DirectionalLight in Unreal automatically. A 🗺️ Layout Map node renders the whole plan as a top-down coordinate map (with sun compass) so you can verify placement before generating anything.
+- 🎬 **Full Scene From One Prompt** — the Scene Director node turns *"medieval village at sunset in winter"* into a coordinated plan: a **structured layout** (see below), seasonal terrain texture baked onto a real walkable terrain mesh, a matching skydome, and the **sun position computed for that season and time of day** — set as a DirectionalLight in Unreal automatically. A 🗺️ Layout Map node renders the whole plan as a top-down coordinate map (streets, rooms, sun compass) so you can verify placement before generating anything.
+- 🏘️ **Layouts that read as places** — a village gets a main street and cross lane, a square, houses in rows *facing the street*, and the church closing the far end; a dungeon gets chambers joined by corridors with pillars in the room corners and torches on the walls; a camp gets a clearing ringed by tents. The template owns the **geometry**; Ollama, when enabled, only names and describes the assets that fill the slots — asking an LLM for coordinates is what used to produce layouts that never lined up into streets.
+- ⛰️ **Scene fitted to the terrain** — the Placement Manager searches the heightfield for the flattest patch big enough for the built envelope and moves the whole layout there as one rigid translation, so the street plan survives intact but lands on ground it can stand on. Ground height is sampled across each asset's **footprint** (not just its pivot), buildings get a levelled pad and stay upright, and props and trees tilt to the terrain normal — applied by both engine importers.
+- 🧍 **Character & rigging presets** — choose how characters are rigged (auto by category / biped / quadruped / none), and the concept-image pose follows that decision automatically. Auto-riggers need a symmetrical full-body **A-pose or T-pose**; the 3/4 hero pose that flatters a concept fuses the limbs into the torso and rigs badly.
 - 🧠 **Natural-Language Asset Planner** — one prompt becomes a full manifest of game-ready assets with names, categories, scale, collision shape, and world placement.
 - 🖼️ **Interactive Approval Gallery** — a native ComfyUI web widget to preview concept art, approve/reject per-asset, and pick 3D generation settings (engine, PBR, rigging) visually.
 - 🧊 **Multiple 3D Backends, cloud or local** — cloud: **Tripo3D** (quad topology, PBR, biped/quadruped auto-rig), **Meshy** (PBR maps, poly-count targeting), or **HiTem3D**, chosen globally on the 3D Generator. Local: **Hunyuan3D 2.1** runs entirely on your own GPU — no API, no keys, no credits, nothing uploaded. Both paths feed the same engine bridges and show a results panel listing every generated model.
-- 🎨 **30+ Art Styles** — from Low Poly, Voxel, and PS1 Retro through Realistic PBR, Dark Fantasy, Cyberpunk, Toon/Cel Shaded, Chibi, Claymation, and more. Concepts are generated one object per image, 3/4 view to the camera, isolated on white — the framing image-to-3D APIs handle best.
+- 🎨 **30+ Art Styles** — from Low Poly, Voxel, and PS1 Retro through Realistic PBR, Dark Fantasy, Cyberpunk, Toon/Cel Shaded, Chibi, Claymation, and more. Concepts are generated one object per image, isolated on white — props at 3/4 view, characters in a rig-ready pose, environment kit pieces straight-on with tileable edges.
 - 🎚️ **Import-only or import + scene setup** — one toggle on every exporter (Unreal and Unity). Off: assets just land in the project. On: meshes spawn at their coordinates, terrain is placed and size-verified, the **skydome becomes a real sky** (emissive sphere in Unreal, `RenderSettings.skybox` in Unity), and the sun light is configured. Applies to objects, terrain, and sky alike.
-- 📐 **Placement Manager** — the single authority for engine delivery: imports in the right order (terrain → sky → assets), normalizes every AI mesh to its intended real-world size by measuring its actual bounds in the engine, snaps asset Z onto the terrain heightfield, and nudges overlapping assets apart. One failing asset no longer aborts the batch.
+- 📐 **Placement Manager** — the single authority for engine delivery: imports in the right order (terrain → sky → assets), normalizes every AI mesh to its intended real-world size by measuring its actual bounds in the engine, fits the layout to the terrain (see above), and nudges overlapping **props** apart while holding buildings on their layout positions. One failing asset no longer aborts the batch.
 - 🔌 **Engine Connection Check** — a dedicated node (plus automatic pre-send verification in both bridges) confirms your Unreal/Unity editor bridge is installed, running, and reachable before you spend API credits.
 - ⚡ **Unreal Engine 5 Bridge Plugin** — a droppable, C++-build-free plugin that listens on port `30010`, auto-imports FBX/GLB into `/Game/Assets/AI_Generated/`, builds materials, sets unit scale & collisions, and spawns actors into the active level.
 - ✅ **Live Unreal import checklist** — the Unreal Bridge node shows every asset it sent with a real-time ⏳ → ✅/❌ status, polled straight from the running Unreal Editor, so you can see exactly what actually imported (and why something didn't) without switching to the Unreal Output Log.
@@ -84,8 +107,9 @@ ComfyUI-Geekatplay-GameAssetMake/
 │   ├── unified_3d_node.py            # 🧊 Unified 3D Generator (cloud APIs)
 │   ├── local_hunyuan3d_node.py       # 🖥️ Local 3D Generator (Hunyuan3D 2.1)
 │   ├── scene_director_node.py        # 🎬 Scene Director (prompt → scene plan + sun/season)
-│   ├── layout_map_node.py            # 🗺️ Layout Map (top-down placement preview)
-│   ├── placement_manager_node.py     # 📐 Placement Manager (order, true scale, terrain snap)
+│   ├── scene_layouts.py              # 🏘️ Structured layout generators (village/dungeon/camp)
+│   ├── layout_map_node.py            # 🗺️ Layout Map (streets, rooms, top-down preview)
+│   ├── placement_manager_node.py     # 📐 Placement Manager (order, true scale, terrain fitting)
 │   ├── terrain_mesh_node.py          # ⛰️ Terrain Mesh Builder (heightmap → mesh)
 │   ├── terrain_texture_node.py       # 🎨 Terrain Texture (aligned to the heightfield)
 │   ├── sun_environment_node.py       # ☀️ Sun / Environment (season + time → light)
@@ -105,6 +129,8 @@ ComfyUI-Geekatplay-GameAssetMake/
 │           └── comfy_importer.py
 ├── unity_plugin/
 │   └── ComfyUnityImporter.cs         # Unity Editor bridge script
+├── docs/
+│   └── images/                       # README screenshots (real node output)
 ├── workflows/                         # Ready-to-load workflows
 │   ├── gameassetmake_unreal.json     # Universal 3D asset pipeline → UE5
 │   ├── gameassetmake_unity.json      # Universal 3D asset pipeline → Unity
@@ -183,7 +209,12 @@ Download [`hunyuan_3d_v2.1.safetensors`](https://huggingface.co/Comfy-Org/hunyua
 
 ### 6. Optional: Ollama for the Single-Object Guardrail and Scene Director
 
-The 🛡️ guardrail's VLM check and the 🎬 Scene Director's layout planning use a local [Ollama](https://ollama.com) server (`http://127.0.0.1:11434` by default, model `gemma3`/`qwen2.5:7b`). Both fall back automatically — the guardrail to a heuristic-only check, the Scene Director to a deterministic seeded layout — so Ollama is optional, not required.
+Two things can use a local [Ollama](https://ollama.com) server (`http://127.0.0.1:11434` by default):
+
+- the 🛡️ guardrail's **VLM check** — needs a *vision* model, default `gemma3:12b`. Pull it with `ollama pull gemma3:12b`. If the model isn't installed the check silently degrades to heuristic-only, so make sure the name on the node matches something `ollama list` actually shows.
+- the 🎬 Scene Director's **asset naming** — default `qwen2.5:7b`. It only names and describes the assets; the layout geometry is always produced by the structured template, so the scene stays coherent with or without Ollama.
+
+Both fall back automatically, so Ollama is optional, not required.
 
 ---
 
@@ -212,7 +243,7 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 
 ## 🎮 Using the Pipeline
 
-1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick one of 30+ `art_style` presets, and set `target_asset_count`. It outputs `asset_manifest_json` and `prompt_list_json` — prompts are built for **one object per image, 3/4 view to the camera, isolated on pure white**.
+1. **Plan the assets** — add **🎮 GameAssetMake Asset Planner**, type your concept prompt, pick one of 30+ `art_style` presets, and set `target_asset_count`. Optionally set the `rigging` and `character_pose` presets (both at the end of the optional inputs). It outputs `asset_manifest_json` and `prompt_list_json` — prompts are built for **one object per image, isolated on pure white**, with a rig-ready A-pose for anything that will be auto-rigged.
 2. **Generate 2D concepts** — feed `prompt_list_json` into the **🔁 Batch Concept Generator**, which loops over the prompts and renders one image per asset with per-item verification (**Z-Image Turbo recommended** — fast and the best at honoring "single object, isolated on white"). Don't wire the prompt list straight into a `CLIPTextEncode`: that collapses every asset into one prompt and every image then contains everything.
 3. **Review & approve** — connect the generated images and `asset_manifest_json` into **🖼️ GameAssetMake Asset Gallery & Approval UI**. Inspect each concept thumbnail, check the ones you want, toggle PBR texturing, and pick **Biped**/**Quadruped**/**None** rigging per asset. Click **Approve & Continue**. (The 3D provider — Tripo3D / Meshy / Hitem3D — is set globally on the 3D Generator node, not per asset.)
 4. **Generate the 3D models** — wire `approved_assets_json` into **🧊 GameAssetMake 3D Generator**, pick your `engine`. It submits cloud tasks, polls for completion, downloads `.FBX`/`.GLB` files into `ComfyUI/output/3d_game_assets/`, and shows a results panel of every model returned by the API.
@@ -241,6 +272,10 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 | Live API calls fail | Check the `generation_status` field per asset in the 3D Generator's output manifest — failures are recorded per-asset without stopping the rest of the batch. Verify your API key and account credit balance. |
 | Gallery images don't display | Make sure the upstream 2D sampler batch size matches (or exceeds) `target_asset_count`; a mismatch is now logged and any assets without an image are skipped rather than reusing an existing one. |
 | A workflow won't load or a node reports missing inputs after an edit | Run `python tools/validate_workflows.py` (with ComfyUI running) — it checks every workflow's links, required inputs, and widget counts against the live node definitions and reports exactly what's wrong. |
+| Fields revert to defaults on reload, or the queue rejects `engine: ''` / `approval_mode: ''` / `target_face_count` below its minimum | A saved workflow carried one stale extra entry in the node's positional `widgets_values` array, and the ComfyUI frontend responds to that length mismatch by discarding the **whole** array. The pack now trims the stale entry on load and resets any impossible value to the node's declared default — **save the workflow once** to make the fix permanent. Right-click a node → **Reset fields to default values** to force it. |
+| Gallery thumbnails show the *previous* run's images, or two browser tabs show each other's concepts | Fixed: concept images are now written under a content-addressed filename that changes whenever the concepts change, so the browser can't serve a cached image and two tabs can't overwrite each other. Hard-reload (Ctrl+Shift+R) once after updating the pack. |
+| A village/dungeon layout looks like randomly scattered props | Make sure the 🎬 Scene Director's `layout_kind` is `auto` (or the template you want) and that your prompt contains a keyword the template matches — `village`/`town`, `dungeon`/`crypt`/`castle`, `forest`/`camp`. Anything unmatched falls back to a spread-out generic scatter. |
+| Buildings sit half-buried in a hillside | Connect the Scene Director's `scene_layout_json` to the 📐 Placement Manager and leave `fit_layout_to_terrain` on — without that link the manager can't tell how big the built area is, so it can't move the scene to flat ground. |
 
 ---
 
@@ -252,6 +287,11 @@ The universal workflows use the **🔁 Batch Concept Generator**, which loops ov
 - [x] HiTem3D live-verified with correct two-key (AK/SK) auth
 - [x] Live Unreal import confirmation checklist (per-asset, polled from the running editor)
 - [x] In-browser 3D model preview with adjust-and-regenerate for a single asset
+- [x] Structured scene layouts — village streets, dungeon rooms + corridors, camp clearings
+- [x] Terrain fitting — flat-site search, footprint sampling, levelled building pads, slope-aligned props
+- [x] Character & rigging presets with rig-ready (A/T-pose) concept framing
+- [ ] Stamp building pads into the heightmap **before** the terrain mesh is built (today the pad is emitted for the engine, but the mesh is already built by the time placement runs — buildings sit at their footprint's average ground height, which is approximate on steep ground)
+- [ ] More layout templates (city block, harbour, mine, arena)
 - [ ] Additional cloud 3D backends (Rodin)
 - [ ] Native Unreal Landscape creation (currently: mesh terrain + optional manual Landscape import)
 - [ ] In-gallery per-asset prompt re-roll (image stage — the 3D stage already supports this)

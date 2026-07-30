@@ -15,9 +15,13 @@ import urllib.request
 SRV = "http://127.0.0.1:8188"
 WF_DIR = r"O:\ComfyUI\custom_nodes\ComfyUI-Geekatplay-GameAssetMake\workflows"
 
-CONNECTION_TYPES = {"MODEL", "CLIP", "VAE", "CLIP_VISION", "CLIP_VISION_OUTPUT",
-                    "CONDITIONING", "LATENT", "IMAGE", "MASK", "VOXEL", "MESH",
-                    "AUDIO", "NOISE", "SAMPLER", "SIGMAS", "GUIDER", "CONTROL_NET"}
+# Only these produce a widget; every other input type is a link socket and takes
+# NO slot in widgets_values. This used to be an allowlist of connection types,
+# which silently mis-classified any type missing from it (UPSCALE_MODEL) as a
+# widget — so a workflow carrying one stale extra value validated as OK while
+# the frontend, seeing the length mismatch, threw all of that node's saved
+# values away on load.
+WIDGET_TYPES = {"INT", "FLOAT", "STRING", "BOOLEAN"}
 
 info = json.loads(urllib.request.urlopen(f"{SRV}/object_info", timeout=60).read())
 
@@ -41,7 +45,7 @@ def expected_widgets(ntype):
                 continue  # link-only
             if isinstance(t, list):
                 out.append((name, "COMBO"))
-            elif t in CONNECTION_TYPES:
+            elif t not in WIDGET_TYPES:
                 continue  # connection input, no widget
             else:
                 out.append((name, t))
@@ -125,7 +129,7 @@ for path in sorted(glob.glob(os.path.join(WF_DIR, "*.json"))):
         for name, defn in spec.get("input", {}).get("required", {}).items():
             t = defn[0]
             opts = defn[1] if len(defn) > 1 else {}
-            is_conn = (not isinstance(t, list)) and (t in CONNECTION_TYPES or
+            is_conn = (not isinstance(t, list)) and (t not in WIDGET_TYPES or
                       (isinstance(opts, dict) and opts.get("forceInput")))
             if is_conn and name not in linked_names:
                 problems.append(f"{ntype}#{nid}: REQUIRED input '{name}' ({t}) is NOT CONNECTED")

@@ -151,12 +151,70 @@ The planner's `environment_pieces` control (default 4) decides how many modular 
 
 Only characters can be rigged; the gallery hides rig options for everything else and the node enforces it server-side.
 
+### Character & rigging presets
+
+Two planner controls decide how characters are rigged and, as a direct consequence, how their concept image is posed:
+
+| `rigging` | Effect |
+|---|---|
+| **Auto — rig by asset category** (default) | heroes/NPCs/bosses → biped, enemies → quadruped |
+| **Biped for every character** | forces a biped skeleton on all characters |
+| **Quadruped for every character** | forces a quadruped skeleton on all characters |
+| **No rigging (static meshes only)** | nothing is rigged — cheapest, no rigging API calls |
+
+| `character_pose` | Prompt requested for characters |
+|---|---|
+| **Auto — rig-ready pose when rigging is on** (default) | A-pose when that character will be rigged, relaxed 3/4 when it won't |
+| **A-pose (arms lowered)** | always A-pose |
+| **T-pose (arms straight out)** | always T-pose |
+| **Relaxed 3/4 hero pose** | always 3/4 — better looking concepts, worse rigs |
+
+This matters more than it looks: an auto-rigger needs a symmetrical, full-body, straight-on reference. A 3/4 hero pose with the arms held against the torso makes the limbs fuse into the body during image-to-3D, and the generated skeleton comes out twisted. Props and level geometry are unaffected — they keep the 3/4 product-shot framing.
+
+Both controls sit at the **end of the planner's optional inputs**. That position is deliberate: `widgets_values` in a saved workflow is a positional array, so adding inputs anywhere else would shift the values of every workflow saved before they existed.
+
+## 🗺️ Scene layouts
+
+The Scene Director lays a scene out from a **structured template**, so the result reads as a place rather than a cloud of props. `layout_kind` picks it; `auto` reads the prompt.
+
+| Village | Dungeon | Forest camp |
+|---|---|---|
+| ![Village layout](../docs/images/layout-village.png) | ![Dungeon layout](../docs/images/layout-dungeon.png) | ![Camp layout](../docs/images/layout-camp.png) |
+
+*Real 🗺️ Layout Map output — the map draws the streets, squares, chambers and corridors, so the plan is verifiable before anything is generated.*
+
+| Template | Keywords | Structure |
+|---|---|---|
+| **village** | village, town, hamlet, settlement, market | main street + cross lane, a square with the well at the crossing, houses in rows set back from the street and **facing it**, church closing the far end, frontage props on the kerb, trees outside the built strip |
+| **dungeon** | dungeon, castle, fort, crypt, ruin, catacomb, temple | grid of chambers joined by corridors, altar in the centre chamber, pillars inset in room corners, doorway frames at corridor mouths, torches along corridors, loose props against the walls |
+| **camp** | forest, camp, woods, campsite, clearing | clearing with a campfire, tents ringing it with their openings facing in, forest packed outside the clearing |
+| **generic** | anything else | central landmark with evenly spread props (minimum-separation scatter, not uniform random) |
+
+The template owns the **geometry**; Ollama, when enabled, only names and describes the assets that fill the slots. Asking an LLM for coordinates is what produced incoherent layouts before — a model handed a blank field returns plausible numbers that never line up into streets, leave no corridors, and overlap. Slots are filled by role, so a house slot always receives a building.
+
+Every asset carries a `placement_role` — `building`, `landmark`, `prop`, `vegetation` or `character` — which drives how it meets the ground.
+
+## ⛰️ Fitting the scene to the terrain
+
+![Terrain fitting](../docs/images/terrain-fitting.png)
+
+The Placement Manager reads the terrain heightfield and adapts the layout to it:
+
+- **`fit_layout_to_terrain`** — searches the heightmap for the flattest patch big enough for the scene's built envelope and moves the **whole layout there as one rigid translation**. The street/room geometry is preserved exactly; only where it sits changes. Terrain is generated from a text description, so nothing guarantees the middle of the map is level — this is what stops a village landing half-buried in a hillside.
+- **footprint sampling** — ground height is sampled at the centre *and four corners* of each asset, not just the pivot. A single centre sample leaves the uphill corner of anything wide sunk into the slope.
+- **`level_building_pads`** — buildings and landmarks get a `terrain_pad` (centre, radius, height, falloff) and stand upright on it. Props and trees instead sit on the **highest** point under their footprint, so no corner dips below the surface.
+- **`align_props_to_slope`** — props and vegetation receive pitch/roll from the terrain normal so they lie along the slope; buildings are always sent upright. Both engine importers apply this.
+- **`max_building_slope_deg`** — buildings on ground steeper than this are named in the placement report.
+- Overlap resolution now only nudges **loose props**. Buildings are anchored on their layout positions — pushing them around is what dissolved a village back into a scatter.
+
+> **Known limitation.** `terrain_pad` is emitted for the engine but the terrain mesh is built *before* the Placement Manager runs, so pads are not yet stamped into the heightmap. Buildings sit at their footprint's average ground height, which is correct on gentle ground and approximate on steep ground. Making pads exact needs the flattening to happen between heightmap generation and the Terrain Mesh Builder.
+
 ## 🛡️ Single-object guardrail
 
 The Batch Concept Generator verifies each asset **as it is generated** (`verify_single_object`) and retries that item immediately if it fails — one object, isolated on white; for rigged characters, exactly one human/animal. A standalone **Single-Object Guardrail** node is also available if you generate concepts some other way. Checks performed:
 
 - **heuristic** — local blob analysis of the white background (free, instant)
-- **vlm** — cross-check by a local [Ollama](https://ollama.com) vision model (default `gemma3` at `http://127.0.0.1:11434`; if Ollama isn't running, the heuristic alone decides)
+- **vlm** — cross-check by a local [Ollama](https://ollama.com) vision model (default `gemma3:12b` at `http://127.0.0.1:11434`; if Ollama isn't running, the heuristic alone decides)
 - Failed images are **automatically regenerated** with a stricter prompt (up to `max_retries`), because a concept with two objects or a busy background ruins the 3D mesh.
 
 ## ⚙️ Before running

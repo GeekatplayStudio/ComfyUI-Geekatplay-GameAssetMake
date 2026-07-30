@@ -355,7 +355,7 @@
       "widgets_values": [
         0.05
       ],
-      "title": "Heal 360 Seam \u2014 Blender-Toolbox"
+      "title": "Heal 360 Seam — Blender-Toolbox"
     },
     {
       "id": 15,
@@ -396,7 +396,7 @@
         2.0,
         2.2
       ],
-      "title": "Save HDRI (.exr) \u2014 Blender-Toolbox"
+      "title": "Save HDRI (.exr) — Blender-Toolbox"
     },
     {
       "id": 9,
@@ -449,7 +449,7 @@
         1000.0,
         200.0
       ],
-      "title": "\ud83c\udf0d Export Skydome for Engine"
+      "title": "🌍 Export Skydome for Engine"
     },
     {
       "id": 55,
@@ -515,7 +515,11 @@
       "widgets_values": [
         true,
         true,
-        true
+        true,
+        true,
+        true,
+        true,
+        12.0
       ],
       "title": "PLACEMENT MANAGER"
     },
@@ -778,8 +782,8 @@
   "config": {},
   "extra": {
     "workflow_info": {
-      "name": "Geekatplay GameAssetMake \u2014 Skydome 360 HDRI from Prompt (Unity)",
-      "author": "Geekatplay Studio \u2014 Vladimir Chopine",
+      "name": "Geekatplay GameAssetMake — Skydome 360 HDRI from Prompt (Unity)",
+      "author": "Geekatplay Studio — Vladimir Chopine",
       "url": "https://github.com/GeekatplayStudio/ComfyUI-Geekatplay-GameAssetMake"
     }
   },

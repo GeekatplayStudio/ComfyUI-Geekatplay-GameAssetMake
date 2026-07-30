@@ -179,7 +179,7 @@ class SingleObjectGuardrailNode:
                 "clip": ("CLIP",),
                 "vae": ("VAE",),
                 "ollama_url": ("STRING", {"default": "http://127.0.0.1:11434"}),
-                "ollama_model": ("STRING", {"default": "gemma3"}),
+                "ollama_model": ("STRING", {"default": "gemma3:12b"}),
             },
         }
 
@@ -218,7 +218,7 @@ class SingleObjectGuardrailNode:
                steps=8, cfg=1.0, sampler_name="euler", scheduler="simple",
                latent_channels=16, seed=0,
                model=None, clip=None, vae=None,
-               ollama_url="http://127.0.0.1:11434", ollama_model="gemma3"):
+               ollama_url="http://127.0.0.1:11434", ollama_model="gemma3:12b"):
         try:
             manifest = json.loads(asset_manifest_json)
         except Exception:
